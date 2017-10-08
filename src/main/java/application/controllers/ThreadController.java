@@ -17,5 +17,6 @@ public class ThreadController{
 //	ThreadController(JdbcTemplate jdbcTeml) {
 //		super(jdbcTeml);
 //	}
+//SELECT u.nickname, th_x.created, f.slug, th.thread_id, th_x.message, th_x.slug, th_x.title FROM threads th JOIN forums f ON f.slug=? AND f.forum_id=th.forum_id JOIN threads_extra th_x ON th_x.created >= ? AND th_x.thread_id=th.thread_id NATURAL JOIN users u ORDER BY th_x.created ? LIMIT ?]
 
 }

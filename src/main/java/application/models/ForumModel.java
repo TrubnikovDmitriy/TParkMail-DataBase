@@ -1,5 +1,6 @@
 package application.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.jdbc.core.RowMapper;
 
@@ -9,13 +10,15 @@ import java.sql.SQLException;
 @SuppressWarnings("unused")
 public class ForumModel {
 
-	@JsonProperty(value = "slug", required = true)
-	private String slug;
-	@JsonProperty(value = "title", required = true)
-	private String title;
 	@JsonProperty(value = "user", required = true)
 	private String nickname;
+	@JsonProperty(required = true)
+	private String slug;
+	@JsonProperty(required = true)
+	private String title;
+	@JsonIgnore
 	private Integer adminID;
+	@JsonIgnore
 	private Integer forumID;
 	private Integer threads;
 	private Integer posts;

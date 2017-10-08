@@ -1,8 +1,11 @@
 package application.models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.jdbc.core.RowMapper;
 
-import java.util.Date;
+import java.sql.*;
+import java.text.SimpleDateFormat;
 
 @SuppressWarnings("unused")
 public class ThreadModel {
@@ -13,11 +16,16 @@ public class ThreadModel {
 	private String message;
 	@JsonProperty(required = true)
 	private String title;
-
-	private Date created;
+	@JsonProperty("forum")
 	private String forumSlug;
-	private Integer id;
+	@JsonProperty("slug")
 	private String threadSlug;
+	@JsonProperty("id")
+	private Integer threadId;
+	@JsonProperty
+	private String created;
+	@JsonIgnore
+	private Integer forumId;
 	private Integer votes;
 
 
@@ -45,11 +53,11 @@ public class ThreadModel {
 		this.title = title;
 	}
 
-	public Date getCreated() {
+	public String getCreated() {
 		return created;
 	}
 
-	public void setCreated(Date created) {
+	public void setCreated(String created) {
 		this.created = created;
 	}
 
@@ -59,14 +67,6 @@ public class ThreadModel {
 
 	public void setForumSlug(String forumSlug) {
 		this.forumSlug = forumSlug;
-	}
-
-	public Integer getId() {
-		return id;
-	}
-
-	public void setId(Integer id) {
-		this.id = id;
 	}
 
 	public String getThreadSlug() {
@@ -83,5 +83,38 @@ public class ThreadModel {
 
 	public void setVotes(Integer votes) {
 		this.votes = votes;
+	}
+
+	public Integer getThreadId() {
+		return threadId;
+	}
+
+	public void setThreadId(Integer threadId) {
+		this.threadId = threadId;
+	}
+
+	public Integer getForumId() {
+		return forumId;
+	}
+
+	public void setForumId(Integer forumId) {
+		this.forumId = forumId;
+	}
+
+	public static final class ThreadMapper implements RowMapper<ThreadModel> {
+		@Override
+		public ThreadModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+			final ThreadModel threadModel = new ThreadModel();
+			threadModel.author = rs.getString("nickname");
+			threadModel.created = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
+					.format(rs.getTimestamp("created"));
+			threadModel.forumSlug = rs.getString("f_slug");
+			threadModel.threadId = rs.getInt("thread_id");
+			threadModel.message = rs.getString("message");
+			threadModel.threadSlug = rs.getString("th_slug");
+			threadModel.title = rs.getString("title");
+			threadModel.votes = rs.getInt("votes");
+			return threadModel;
+		}
 	}
 }
