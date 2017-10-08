@@ -5,6 +5,7 @@ import application.models.ForumModel;
 import application.models.ThreadModel;
 import application.models.UserModel;
 import application.views.ErrorView;
+import com.sun.org.apache.bcel.internal.generic.DUP;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -14,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -23,12 +25,12 @@ import java.util.List;
 @RequestMapping(path = "/forum")
 public class ForumController{
 
-	private ForumDAO forumDAO;
+	private final ForumDAO forumDAO;
 
-	@Autowired
-	ForumController(JdbcTemplate jdbcTemlate) {
-		forumDAO = new ForumDAO(jdbcTemlate);
+	public ForumController(ForumDAO forumDAO) {
+		this.forumDAO = forumDAO;
 	}
+
 
 	@PostMapping(path = "/create")
 	public ResponseEntity createForum(@RequestBody ForumModel forumModel) {
@@ -66,8 +68,16 @@ public class ForumController{
 		}
 		catch (EmptyResultDataAccessException e) {
 			return new ResponseEntity<ErrorView>(
-					new ErrorView("Can't find user with nickname " + threadModel.getAuthor()),
+					new ErrorView("Author or forumSlug do not exists!"),
 					HttpStatus.NOT_FOUND
+			);
+		}
+//		TODO getThreadBySlug()
+		catch (DuplicateKeyException e) {
+			return new ResponseEntity<>(
+//					getThreadBySlug(),
+					new ErrorView("Скоро здесь будет выводиться уже сущствующая ветвь"),
+					HttpStatus.CONFLICT
 			);
 		}
 		catch (RuntimeException e) {
@@ -88,7 +98,7 @@ public class ForumController{
 		}
 		catch (EmptyResultDataAccessException e) {
 			return new ResponseEntity<ErrorView>(
-					new ErrorView("Can't find forum with slug " + forumSlug),
+					new ErrorView("Forum '" + forumSlug + "' do not exists!"),
 					HttpStatus.NOT_FOUND
 			);
 		}
@@ -103,19 +113,20 @@ public class ForumController{
 
 		try {
 			final List<ThreadModel> threads = forumDAO.getThreads(forumSlug, limit, since, desc);
-			return threads.isEmpty() ?
-					new ResponseEntity<ErrorView>(
-							new ErrorView("Empty result!"),
-							HttpStatus.NOT_FOUND
-					) :
-					new ResponseEntity<List<ThreadModel>>(
-							threads,
-							HttpStatus.OK
-					);
+			return new ResponseEntity<List<ThreadModel>>(
+					threads,
+					HttpStatus.OK
+			);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return new ResponseEntity<ErrorView>(
+					new ErrorView("Forum '" + forumSlug + "' do not exists!"),
+					HttpStatus.NOT_FOUND
+			);
 		}
 		catch (RuntimeException e) {
 			return new ResponseEntity<ErrorView>(
-					new ErrorView("Query parametrs are not valid!"),
+					new ErrorView(e.getMessage()),
 					HttpStatus.NOT_FOUND
 			);
 		}
@@ -130,22 +141,22 @@ public class ForumController{
 
 		try {
 			final List<UserModel> users = forumDAO.getUsers(forumSlug, limit, since, desc);
-			return users.isEmpty() ?
-					new ResponseEntity<ErrorView>(
-							new ErrorView("Empty result!"),
-							HttpStatus.NOT_FOUND
-					) :
-					new ResponseEntity<List<UserModel>>(
+			return new ResponseEntity<List<UserModel>>(
 							users,
 							HttpStatus.OK
 					);
 		}
+		catch (EmptyResultDataAccessException e) {
+			return new ResponseEntity<ErrorView>(
+					new ErrorView("Forum '" + forumSlug + "' do not exists!"),
+					HttpStatus.NOT_FOUND
+			);
+		}
 		catch (RuntimeException e) {
 			return new ResponseEntity<ErrorView>(
-					new ErrorView("Query parametrs are not valid!"),
+					new ErrorView(e.getMessage()),
 					HttpStatus.NOT_FOUND
 			);
 		}
 	}
-
 }

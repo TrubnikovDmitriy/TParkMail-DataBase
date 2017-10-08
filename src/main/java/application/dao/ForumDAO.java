@@ -6,7 +6,6 @@ import application.models.ThreadModel;
 import application.models.UserModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
@@ -22,6 +21,7 @@ public class ForumDAO {
 		jdbcTemplate = jdbcTempl;
 	}
 
+	@Transactional
 	public ForumModel createNewForum(ForumModel forumModel) {
 		final Integer adminID = jdbcTemplate.queryForObject(
 				"SELECT user_id FROM users WHERE nickname=?",
@@ -53,19 +53,31 @@ public class ForumDAO {
 				new Object[] {threadModel.getForumId(), authorID},
 				Integer.class));
 
-		jdbcTemplate.update(
-				"INSERT INTO threads_extra(thread_id, created, message, slug, title) " +
-					"VALUES(?, ?, ?, ?, ?)",
-				threadModel.getThreadId(),
-				Timestamp.valueOf(threadModel.getCreated()),
-				threadModel.getMessage(),
-				threadModel.getThreadSlug(),
-				threadModel.getTitle()
-		);
+		if (threadModel.getCreated().isEmpty()) {
+			jdbcTemplate.update(
+					"INSERT INTO threads_extra(thread_id, message, title, slug) " +
+							"VALUES(?, ?, ?, ?)",
+					threadModel.getThreadId(),
+					threadModel.getMessage(),
+					threadModel.getTitle(),
+					threadModel.getThreadSlug().isEmpty() ? null :
+							threadModel.getThreadSlug()
+			);
+		} else {
+			jdbcTemplate.update(
+					"INSERT INTO threads_extra(thread_id, created, message, title, slug) " +
+							"VALUES(?, ?, ?, ?, ?)",
+					threadModel.getThreadId(),
+					Timestamp.valueOf(threadModel.getCreated()),
+					threadModel.getMessage(),
+					threadModel.getTitle(),
+					threadModel.getThreadSlug().isEmpty() ? null :
+							threadModel.getThreadSlug()
+			);
+		}
 		return threadModel;
 	}
 
-	@Transactional
 	public ForumModel getForumBySlug(String forumSlug) {
 		final ForumModel forumModel = jdbcTemplate.queryForObject(
 				"SELECT slug, title, admin_id, forum_id FROM forums WHERE slug=?",
@@ -79,7 +91,7 @@ public class ForumDAO {
 						forumModel.getAdminID()
 				)
 		);
-		forumModel.setPosts(
+		forumModel.setThreads(
 				jdbcTemplate.queryForObject(
 					"SELECT COUNT(th.thread_id) FROM forums f " +
 						"NATURAL JOIN threads th WHERE f.slug = ?",
@@ -87,7 +99,7 @@ public class ForumDAO {
 					forumSlug
 				)
 		);
-		forumModel.setThreads(
+		forumModel.setPosts(
 				jdbcTemplate.queryForObject(
 					"SELECT COUNT(p.post_id) FROM forums f JOIN threads th " +
 							"ON f.slug = ? AND f.forum_id=th.forum_id " +
@@ -112,6 +124,10 @@ public class ForumDAO {
 
 	public List<ThreadModel> getThreads(String forumSlug,
 			Integer limit, Timestamp since, Boolean desc) {
+		jdbcTemplate.queryForObject(
+				"SELECT forum_id FROM forums WHERE slug=?",
+				Integer.class, forumSlug
+		); // Проверка, что форум вообще существует
 		final String query =
 				"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
 				"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
@@ -136,6 +152,10 @@ public class ForumDAO {
 
 	public List<UserModel> getUsers(String forumSlug,
 			Integer limit, String since, Boolean desc) {
+		jdbcTemplate.queryForObject(
+				"SELECT forum_id FROM forums WHERE slug=?",
+				Integer.class, forumSlug
+		); // Проверка, что форум вообще существует
 		final String query =
 				"SELECT DISTINCT ux.about, ux.email, ux.fullname, u.nickname, u.user_id " +
 				"FROM forums f JOIN threads th " +

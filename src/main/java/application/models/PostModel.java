@@ -19,6 +19,7 @@ public class PostModel {
 	private Date created;
 	private Integer id;
 
+
 	public String getAuthor() {
 		return author;
 	}

@@ -28,7 +28,6 @@ public class ThreadModel {
 	private Integer forumId;
 	private Integer votes;
 
-
 	public String getAuthor() {
 		return author;
 	}

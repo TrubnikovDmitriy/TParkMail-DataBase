@@ -22,6 +22,7 @@ public class ForumModel {
 	private Integer forumID;
 	private Integer threads;
 	private Integer posts;
+
 	public String getSlug() {
 		return slug;
 	}
@@ -78,6 +79,7 @@ public class ForumModel {
 		this.posts = posts;
 	}
 
+
 	public static final class ForumMapper implements RowMapper<ForumModel> {
 		@Override
 		public ForumModel mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -89,41 +91,4 @@ public class ForumModel {
 			return forumModel;
 		}
 	}
-
-	//	public boolean createNewForum() {
-//		try {
-//			JDBC.beginTransaction();
-//			ResultSet resultSet = JDBC.executeReturnSet(
-//					"SELECT user_id FROM users " +
-//					"WHERE nickname = '" + nickname + "';"
-//			);
-//			resultSet.next();
-//			this.adminID = resultSet.getInt("user_id");
-//
-//			resultSet = JDBC.executeReturnSet(
-//					"INSERT INTO forums(admin_id) " +
-//					"VALUES(" + adminID + ')' +
-//					"RETURNING forum_id;"
-//			);
-//			resultSet.next();
-//			this.forumID = resultSet.getInt("forum_id");
-//
-//			JDBC.executeReturnVoid(
-//					"INSERT INTO forums_extra(forum_id, title, slug)" +
-//						"VALUES(" +
-//							forumID + ", '" +
-//							this.title + "', '" +
-//							this.slug + "');"
-//			);
-//			JDBC.commitTransaction();
-//			this.threads = 0;
-//			this.posts = 0;
-//			return true;
-//		}
-//		catch (SQLException sqlException) {
-//			System.out.println("ErrorSQL: " + sqlException.getMessage());
-//			return false;
-//		}
-//	}
-
 }
