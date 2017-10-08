@@ -22,6 +22,16 @@ public class ForumModel {
 	private Integer forumID;
 	private Integer threads;
 	private Integer posts;
+	
+	public ForumModel() {
+	}
+	
+	public ForumModel(String nickname, String slug, String title) {
+		this.nickname = nickname;
+		this.slug = slug;
+		this.title = title;
+	}
+
 	public String getSlug() {
 		return slug;
 	}
@@ -46,11 +56,11 @@ public class ForumModel {
 		this.nickname = nickname;
 	}
 
-	public int getThreads() {
+	public Integer getThreads() {
 		return threads;
 	}
 
-	public int getPosts() {
+	public Integer getPosts() {
 		return posts;
 	}
 
