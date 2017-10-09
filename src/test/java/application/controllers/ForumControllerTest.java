@@ -1,5 +1,6 @@
 package application.controllers;
 
+import application.models.UserModel;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,15 +31,29 @@ public class ForumControllerTest {
 	@Autowired
 	private ObjectMapper mapper;
 
-	@Test
-	public void testNoAdmin() throws Exception {
-		mockMvc.perform(post("/forum/create")
-					.contentType(MediaType.APPLICATION_JSON)
-					.content(mapper.writeValueAsString(new ForumModel("test", "test", "test")))
-				)
-		.andExpect(status().isNotFound())
-		.andExpect(jsonPath("message").value("Can't find user with nickname test"));
+//	@Test
+//	public void testNoAdmin() throws Exception {
+//		mockMvc.perform(post("/forum/create")
+//						.contentType(MediaType.APPLICATION_JSON)
+//						.content(mapper.writeValueAsString(new ForumModel("test", "test", "test")))
+//				)
+//		.andExpect(status().isNotFound())
+//		.andExpect(jsonPath("message").value("Can't find user with nickname test"));
+//
+//	}
 
+	@Test
+	public void testCreateNewUser() throws Exception {
+		mockMvc.perform(post("/user/newuser/create")
+				.contentType(MediaType.APPLICATION_JSON)
+				.content(mapper.writeValueAsString(
+						new UserModel(
+								"email@mail.ru",
+								"New User",
+								"I am a new user!"
+						)
+				))
+		).andExpect(status().isCreated());
 	}
 
 }

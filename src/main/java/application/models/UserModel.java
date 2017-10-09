@@ -3,6 +3,7 @@ package application.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.jdbc.core.RowMapper;
+import org.springframework.lang.Nullable;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -17,8 +18,16 @@ public class UserModel {
 	@JsonProperty
 	private String about;
 	@JsonIgnore
-	private int id;
+	private Integer id;
 	private String nickname;
+
+	public UserModel() {}
+
+	public UserModel(String email, String fullname, String about) {
+		this.email = email;
+		this.fullname = fullname;
+		this.about = about;
+	}
 
 	public String getEmail() {
 		return email;
@@ -52,11 +61,11 @@ public class UserModel {
 		this.nickname = nickname;
 	}
 
-	public int getId() {
+	public Integer getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(Integer id) {
 		this.id = id;
 	}
 

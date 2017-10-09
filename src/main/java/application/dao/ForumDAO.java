@@ -15,10 +15,10 @@ import java.util.List;
 @Repository
 public class ForumDAO {
 
-	private JdbcTemplate jdbcTemplate;
+	private final JdbcTemplate jdbcTemplate;
 
 	public ForumDAO(JdbcTemplate jdbcTempl) {
-		jdbcTemplate = jdbcTempl;
+		this.jdbcTemplate = jdbcTempl;
 	}
 
 	@Transactional
