@@ -83,7 +83,7 @@ public class ForumController{
 		catch (RuntimeException e) {
 			return new ResponseEntity<ErrorView>(
 					new ErrorView(e.getMessage()),
-					HttpStatus.NOT_FOUND
+					HttpStatus.BAD_REQUEST
 			);
 		}
 	}

@@ -11,9 +11,9 @@ import java.sql.SQLException;
 @SuppressWarnings("unused")
 public class UserModel {
 
-	@JsonProperty(required = true)
+	@JsonProperty
 	private String email;
-	@JsonProperty(required = true)
+	@JsonProperty
 	private String fullname;
 	@JsonProperty
 	private String about;
@@ -68,6 +68,7 @@ public class UserModel {
 	public void setId(Integer id) {
 		this.id = id;
 	}
+
 
 	public static final class UserMapper implements RowMapper<UserModel> {
 		@Override

@@ -23,15 +23,17 @@ public class ForumDAO {
 
 	@Transactional
 	public ForumModel createNewForum(ForumModel forumModel) {
-		final Integer adminID = jdbcTemplate.queryForObject(
-				"SELECT user_id FROM users WHERE nickname=?",
-				Integer.class,
-				forumModel.getNickname()
+		final UserModel userModel = jdbcTemplate.queryForObject(
+				"SELECT * FROM users NATURAL JOIN users_extra " +
+					"WHERE LOWER(nickname)=LOWER(?)",
+				new Object[] {forumModel.getNickname()},
+				new UserModel.UserMapper()
 		);
 		jdbcTemplate.update(
 				"INSERT INTO forums(admin_id, title, slug) VALUES(?, ?, ?)",
-				adminID, forumModel.getTitle(), forumModel.getSlug()
-				);
+				userModel.getId(), forumModel.getTitle(), forumModel.getSlug()
+		);
+		forumModel.setNickname(userModel.getNickname());
 		forumModel.setPosts(0);
 		forumModel.setThreads(0);
 		return forumModel;
@@ -53,26 +55,24 @@ public class ForumDAO {
 				new Object[] {threadModel.getForumId(), authorID},
 				Integer.class));
 
-		if (threadModel.getCreated().isEmpty()) {
+		if (threadModel.getCreated() == null) {
 			jdbcTemplate.update(
 					"INSERT INTO threads_extra(thread_id, message, title, slug) " +
 							"VALUES(?, ?, ?, ?)",
 					threadModel.getThreadId(),
 					threadModel.getMessage(),
 					threadModel.getTitle(),
-					threadModel.getThreadSlug().isEmpty() ? null :
-							threadModel.getThreadSlug()
+					threadModel.getThreadSlug()
 			);
 		} else {
 			jdbcTemplate.update(
 					"INSERT INTO threads_extra(thread_id, created, message, title, slug) " +
 							"VALUES(?, ?, ?, ?, ?)",
 					threadModel.getThreadId(),
-					Timestamp.valueOf(threadModel.getCreated()),
+					threadModel.getCreated(),
 					threadModel.getMessage(),
 					threadModel.getTitle(),
-					threadModel.getThreadSlug().isEmpty() ? null :
-							threadModel.getThreadSlug()
+					threadModel.getThreadSlug()
 			);
 		}
 		return threadModel;
@@ -80,7 +80,8 @@ public class ForumDAO {
 
 	public ForumModel getForumBySlug(String forumSlug) {
 		final ForumModel forumModel = jdbcTemplate.queryForObject(
-				"SELECT slug, title, admin_id, forum_id FROM forums WHERE slug=?",
+				"SELECT slug, title, admin_id, forum_id " +
+					"FROM forums WHERE LOWER(slug)=LOWER(?)",
 				new Object[] {forumSlug},
 				new ForumModel.ForumMapper()
 		);

@@ -5,7 +5,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.*;
+import java.sql.Date;
 import java.text.SimpleDateFormat;
+import java.util.*;
 
 @SuppressWarnings("unused")
 public class ThreadModel {
@@ -23,7 +25,7 @@ public class ThreadModel {
 	@JsonProperty("id")
 	private Integer threadId;
 	@JsonProperty
-	private String created;
+	private Timestamp created;
 	@JsonIgnore
 	private Integer forumId;
 	private Integer votes;
@@ -52,11 +54,11 @@ public class ThreadModel {
 		this.title = title;
 	}
 
-	public String getCreated() {
+	public Timestamp getCreated() {
 		return created;
 	}
 
-	public void setCreated(String created) {
+	public void setCreated(Timestamp created) {
 		this.created = created;
 	}
 
@@ -105,8 +107,7 @@ public class ThreadModel {
 		public ThreadModel mapRow(ResultSet rs, int rowNum) throws SQLException {
 			final ThreadModel threadModel = new ThreadModel();
 			threadModel.author = rs.getString("nickname");
-			threadModel.created = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssZ")
-					.format(rs.getTimestamp("created"));
+			threadModel.created = rs.getTimestamp("created");
 			threadModel.forumSlug = rs.getString("f_slug");
 			threadModel.threadId = rs.getInt("thread_id");
 			threadModel.message = rs.getString("message");
