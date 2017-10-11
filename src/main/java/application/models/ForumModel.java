@@ -23,8 +23,7 @@ public class ForumModel {
 	private Integer threads;
 	private Integer posts;
 
-	public ForumModel() {
-	}
+	public ForumModel() {}
 	
 	public ForumModel(String nickname, String slug, String title) {
 		this.nickname = nickname;

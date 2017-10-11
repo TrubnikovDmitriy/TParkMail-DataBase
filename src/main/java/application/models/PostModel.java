@@ -2,6 +2,7 @@ package application.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.sql.Timestamp;
 import java.util.Date;
 
 @SuppressWarnings("unused")
@@ -11,13 +12,22 @@ public class PostModel {
 	private String author;
 	@JsonProperty(required = true)
 	private String message;
+	@JsonProperty(required = true)
+	private Integer parentId;
 
-	private Boolean isEdited = false;
-	private PostModel parent = null;
+	@JsonProperty(defaultValue = "false")
+	private Boolean isEdited;
+	@JsonProperty
 	private String forumSlug;
+	@JsonProperty
+	private String threadSlug;
+	@JsonProperty
+	private Timestamp created;
+	@JsonProperty
+	private Integer postId;
 	private Integer thredId;
-	private Date created;
-	private Integer id;
+	private String thread;
+	private String path;
 
 
 	public String getAuthor() {
@@ -44,14 +54,6 @@ public class PostModel {
 		isEdited = edited;
 	}
 
-	public PostModel getParent() {
-		return parent;
-	}
-
-	public void setParent(PostModel parent) {
-		this.parent = parent;
-	}
-
 	public String getForumSlug() {
 		return forumSlug;
 	}
@@ -72,15 +74,47 @@ public class PostModel {
 		return created;
 	}
 
-	public void setCreated(Date created) {
+	public void setCreated(Timestamp created) {
 		this.created = created;
 	}
 
-	public Integer getId() {
-		return id;
+	public Integer getParentId() {
+		return parentId;
 	}
 
-	public void setId(Integer id) {
-		this.id = id;
+	public void setParentId(Integer parentId) {
+		this.parentId = parentId;
+	}
+
+	public String getThreadSlug() {
+		return threadSlug;
+	}
+
+	public void setThreadSlug(String threadSlug) {
+		this.threadSlug = threadSlug;
+	}
+
+	public Integer getPostId() {
+		return postId;
+	}
+
+	public void setPostId(Integer postId) {
+		this.postId = postId;
+	}
+
+	public String getThread() {
+		return thread;
+	}
+
+	public void setThread(String thread) {
+		this.thread = thread;
+	}
+
+	public String getPath() {
+		return path;
+	}
+
+	public void setPath(String path) {
+		this.path = path;
 	}
 }

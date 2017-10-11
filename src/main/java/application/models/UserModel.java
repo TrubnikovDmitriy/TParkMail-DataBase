@@ -69,7 +69,6 @@ public class UserModel {
 		this.id = id;
 	}
 
-
 	public static final class UserMapper implements RowMapper<UserModel> {
 		@Override
 		public UserModel mapRow(ResultSet rs, int rowNum) throws SQLException {

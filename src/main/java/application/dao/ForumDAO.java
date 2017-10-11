@@ -4,10 +4,12 @@ package application.dao;
 import application.models.ForumModel;
 import application.models.ThreadModel;
 import application.models.UserModel;
+import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Date;
 import java.sql.Timestamp;
 import java.util.List;
 
@@ -123,32 +125,50 @@ public class ForumDAO {
 //				});
 	}
 
-	public List<ThreadModel> getThreads(String forumSlug,
-			Integer limit, Timestamp since, Boolean desc) {
+	public List<ThreadModel> getThreads(String forumSlug, Integer limit,
+	                                    java.util.Date since, Boolean desc) {
 		jdbcTemplate.queryForObject(
-				"SELECT forum_id FROM forums WHERE slug=?",
+				"SELECT forum_id FROM forums WHERE LOWER(slug)=LOWER(?)",
 				Integer.class, forumSlug
 		); // Проверка, что форум вообще существует
-		final String query =
-				"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
-				"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
-				"SUM(v.voice) AS votes " +
-				"FROM threads th JOIN forums f " +
-				"ON f.slug=? AND f.forum_id=th.forum_id " +
-				"JOIN threads_extra th_x " +
-				"ON th_x.created >= ? AND th_x.thread_id=th.thread_id " +
-				"JOIN users u ON th.author_id=u.user_id " +
-				"LEFT JOIN votes v ON th.thread_id=v.thread_id " +
-				"GROUP BY th.thread_id, nickname, created, f.slug, " +
-				"th_x.message, th_x.slug, th_x.title " +
-				"ORDER BY th_x.created" +
-				(desc ? " DESC " : " ASC ") + "LIMIT ?;";
 
-		return jdbcTemplate.query(
-				query,
-				new Object[] {forumSlug, since, limit},
-				new ThreadModel.ThreadMapper()
-		);
+		return since == null ?
+				jdbcTemplate.query(
+						"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
+								"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
+								"SUM(v.voice) AS votes " +
+								"FROM threads th JOIN forums f " +
+								"ON LOWER(f.slug)=LOWER(?) AND f.forum_id=th.forum_id " +
+								"JOIN threads_extra th_x ON " +
+								"th_x.thread_id=th.thread_id " +
+								"JOIN users u ON th.author_id=u.user_id " +
+								"LEFT JOIN votes v ON th.thread_id=v.thread_id " +
+								"GROUP BY th.thread_id, nickname, created, f.slug, " +
+								"th_x.message, th_x.slug, th_x.title " +
+								"ORDER BY th_x.created" +
+								(desc ? " DESC " : " ASC ") + "LIMIT ?;",
+						new Object[] {forumSlug, limit},
+						new ThreadModel.ThreadMapper()
+				) :
+				jdbcTemplate.query(
+						"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
+								"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
+								"SUM(v.voice) AS votes " +
+								"FROM threads th JOIN forums f " +
+								"ON LOWER(f.slug)=LOWER(?) AND f.forum_id=th.forum_id " +
+								"JOIN threads_extra th_x ON " +
+								"th_x.created " + (desc ? "<=" : ">=") + " ? AND " +
+								"th_x.thread_id=th.thread_id " +
+								"JOIN users u ON th.author_id=u.user_id " +
+								"LEFT JOIN votes v ON th.thread_id=v.thread_id " +
+								"GROUP BY th.thread_id, nickname, created, f.slug, " +
+								"th_x.message, th_x.slug, th_x.title " +
+								"ORDER BY th_x.created" +
+								(desc ? " DESC " : " ASC ") + "LIMIT ?;",
+						new Object[] {forumSlug, since, limit},
+						new ThreadModel.ThreadMapper()
+				);
+
 	}
 
 	public List<UserModel> getUsers(String forumSlug,

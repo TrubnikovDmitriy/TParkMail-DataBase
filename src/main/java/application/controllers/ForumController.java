@@ -5,18 +5,14 @@ import application.models.ForumModel;
 import application.models.ThreadModel;
 import application.models.UserModel;
 import application.views.ErrorView;
-import com.sun.org.apache.bcel.internal.generic.DUP;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.Date;
 import java.util.List;
 
 
@@ -108,8 +104,9 @@ public class ForumController{
 	public ResponseEntity getThreads(
 			@PathVariable String forumSlug,
 			@RequestParam(name = "limit", required = false, defaultValue = "100") Integer limit,
-			@RequestParam(name = "since", required = false, defaultValue = "2000-01-01 00:00:00") Timestamp since,
-			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc) {
+			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
+			@RequestParam(name = "since", required = false)
+			@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX") java.util.Date since) {
 
 		try {
 			final List<ThreadModel> threads = forumDAO.getThreads(forumSlug, limit, since, desc);
