@@ -1,13 +1,11 @@
 package application.models;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.*;
-import java.sql.Date;
-import java.text.SimpleDateFormat;
-import java.util.*;
 
 @SuppressWarnings("unused")
 public class ThreadModel {
@@ -23,12 +21,19 @@ public class ThreadModel {
 	@JsonProperty("slug")
 	private String threadSlug;
 	@JsonProperty("id")
-	private Integer threadId;
-	@JsonProperty
+	private Long threadId;
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 	private Timestamp created;
 	@JsonIgnore
-	private Integer forumId;
+	private Long forumId;
 	private Integer votes;
+
+	public ThreadModel() {};
+
+	public ThreadModel(String threadSlug, Long threadId) {
+		this.threadSlug = threadSlug;
+		this.threadId = threadId;
+	}
 
 	public String getAuthor() {
 		return author;
@@ -86,19 +91,19 @@ public class ThreadModel {
 		this.votes = votes;
 	}
 
-	public Integer getThreadId() {
+	public Long getThreadId() {
 		return threadId;
 	}
 
-	public void setThreadId(Integer threadId) {
+	public void setThreadId(Long threadId) {
 		this.threadId = threadId;
 	}
 
-	public Integer getForumId() {
+	public Long getForumId() {
 		return forumId;
 	}
 
-	public void setForumId(Integer forumId) {
+	public void setForumId(Long forumId) {
 		this.forumId = forumId;
 	}
 
@@ -109,7 +114,7 @@ public class ThreadModel {
 			threadModel.author = rs.getString("nickname");
 			threadModel.created = rs.getTimestamp("created");
 			threadModel.forumSlug = rs.getString("f_slug");
-			threadModel.threadId = rs.getInt("thread_id");
+			threadModel.threadId = rs.getLong("thread_id");
 			threadModel.message = rs.getString("message");
 			threadModel.threadSlug = rs.getString("th_slug");
 			threadModel.title = rs.getString("title");

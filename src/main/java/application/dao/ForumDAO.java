@@ -45,17 +45,24 @@ public class ForumDAO {
 	public ThreadModel createNewThread(String forumSlug, ThreadModel threadModel) {
 
 		threadModel.setForumId(jdbcTemplate.queryForObject(
-				"SELECT forum_id FROM forums WHERE slug=?",
-				Integer.class, forumSlug));
+				"SELECT forum_id FROM forums WHERE LOWER(slug)=LOWER(?)",
+				Long.class, forumSlug
+		));
+		threadModel.setForumSlug(jdbcTemplate.queryForObject(
+				"SELECT slug FROM forums WHERE forum_id=?",
+				String.class, threadModel.getForumId()
+		));
 
 		final Integer authorID = jdbcTemplate.queryForObject(
-				"SELECT user_id FROM users WHERE nickname=?",
-				Integer.class, threadModel.getAuthor());
+				"SELECT user_id FROM users WHERE LOWER(nickname)=LOWER(?)",
+				Integer.class, threadModel.getAuthor()
+		);
 
 		threadModel.setThreadId(jdbcTemplate.queryForObject(
 				"INSERT INTO threads(forum_id, author_id) VALUES(?, ?) RETURNING thread_id",
 				new Object[] {threadModel.getForumId(), authorID},
-				Integer.class));
+				Long.class)
+		);
 
 		if (threadModel.getCreated() == null) {
 			jdbcTemplate.update(
@@ -97,7 +104,7 @@ public class ForumDAO {
 		forumModel.setThreads(
 				jdbcTemplate.queryForObject(
 					"SELECT COUNT(th.thread_id) FROM forums f " +
-						"NATURAL JOIN threads th WHERE f.slug = ?",
+						"NATURAL JOIN threads th WHERE LOWER(f.slug)=LOWER(?)",
 					Integer.class,
 					forumSlug
 				)
@@ -105,7 +112,7 @@ public class ForumDAO {
 		forumModel.setPosts(
 				jdbcTemplate.queryForObject(
 					"SELECT COUNT(p.post_id) FROM forums f JOIN threads th " +
-							"ON f.slug = ? AND f.forum_id=th.forum_id " +
+							"ON LOWER(f.slug)=LOWER(?) AND f.forum_id=th.forum_id " +
 							"NATURAL JOIN posts p",
 					Integer.class,
 					forumSlug

@@ -1,9 +1,10 @@
 package application.models;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.sql.Timestamp;
-import java.util.Date;
 
 @SuppressWarnings("unused")
 public class PostModel {
@@ -12,20 +13,23 @@ public class PostModel {
 	private String author;
 	@JsonProperty(required = true)
 	private String message;
-	@JsonProperty(required = true)
+	@JsonProperty(value = "parent", required = true)
 	private Integer parentId;
 
 	@JsonProperty(defaultValue = "false")
 	private Boolean isEdited;
-	@JsonProperty
+	@JsonProperty(value = "forum")
 	private String forumSlug;
 	@JsonProperty
 	private String threadSlug;
-	@JsonProperty
+	@JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
 	private Timestamp created;
-	@JsonProperty
-	private Integer postId;
-	private Integer thredId;
+	@JsonProperty(value = "id")
+	private Long postId;
+	@JsonProperty(value = "thread")
+	private Long threadId;
+	private Long authorId;
+	@JsonIgnore
 	private String thread;
 	private String path;
 
@@ -62,15 +66,15 @@ public class PostModel {
 		this.forumSlug = forumSlug;
 	}
 
-	public Integer getThredId() {
-		return thredId;
+	public Long getThreadId() {
+		return threadId;
 	}
 
-	public void setThredId(Integer thredId) {
-		this.thredId = thredId;
+	public void setThreadId(Long threadId) {
+		this.threadId = threadId;
 	}
 
-	public Date getCreated() {
+	public Timestamp getCreated() {
 		return created;
 	}
 
@@ -94,11 +98,11 @@ public class PostModel {
 		this.threadSlug = threadSlug;
 	}
 
-	public Integer getPostId() {
+	public Long getPostId() {
 		return postId;
 	}
 
-	public void setPostId(Integer postId) {
+	public void setPostId(Long postId) {
 		this.postId = postId;
 	}
 
@@ -116,5 +120,13 @@ public class PostModel {
 
 	public void setPath(String path) {
 		this.path = path;
+	}
+
+	public Long getAuthorId() {
+		return authorId;
+	}
+
+	public void setAuthorId(Long authorId) {
+		this.authorId = authorId;
 	}
 }

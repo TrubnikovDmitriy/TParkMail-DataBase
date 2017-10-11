@@ -1,6 +1,7 @@
 package application.controllers;
 
 import application.dao.ForumDAO;
+import application.dao.ThreadDAO;
 import application.models.ForumModel;
 import application.models.ThreadModel;
 import application.models.UserModel;
@@ -21,9 +22,12 @@ import java.util.List;
 @RequestMapping(path = "/forum")
 public class ForumController{
 
+	private final ThreadDAO threadDAO;
 	private final ForumDAO forumDAO;
 
-	public ForumController(ForumDAO forumDAO) {
+	public ForumController(ThreadDAO threadDAO,
+	                       ForumDAO forumDAO) {
+		this.threadDAO = threadDAO;
 		this.forumDAO = forumDAO;
 	}
 
@@ -68,11 +72,9 @@ public class ForumController{
 					HttpStatus.NOT_FOUND
 			);
 		}
-//		TODO getThreadBySlug()
 		catch (DuplicateKeyException e) {
-			return new ResponseEntity<>(
-//					getThreadBySlug(),
-					new ErrorView("Скоро здесь будет выводиться уже сущствующая ветвь"),
+			return new ResponseEntity<ThreadModel>(
+					threadDAO.getThreadBySlug(threadModel.getThreadSlug()),
 					HttpStatus.CONFLICT
 			);
 		}
