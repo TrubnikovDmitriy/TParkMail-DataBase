@@ -36,10 +36,10 @@ public class ThreadModel {
 	}
 
 	public void updateThread(ThreadUpdateModel updateThread) {
-		if (!updateThread.getTitle().isEmpty()) {
+		if (updateThread.getTitle() != null) {
 			this.title = updateThread.getTitle();
 		}
-		if (!updateThread.getMessage().isEmpty()) {
+		if (updateThread.getMessage() != null) {
 			this.message = updateThread.getMessage();
 		}
 	}

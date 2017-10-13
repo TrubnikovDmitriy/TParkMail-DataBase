@@ -31,7 +31,7 @@ public class ThreadController{
 			@RequestBody List<PostModel> posts) {
 
 		try {
-			if (!threadDAO.checkParents(posts)) {
+			if (!threadDAO.checkParents(posts, threadIdOrSlug)) {
 				return new ResponseEntity<ErrorView>(
 						new ErrorView("Одно или несколько из родительских сообщений отстувуют"),
 						HttpStatus.CONFLICT

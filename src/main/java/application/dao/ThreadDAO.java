@@ -192,9 +192,18 @@ public class ThreadDAO {
 
 	}
 
-	public boolean checkParents(List<PostModel> posts) {
+	public boolean checkParents(List<PostModel> posts, String threadIdOrSlug) {
+		Long threadTempID;
+		try {
+			threadTempID = Long.parseLong(threadIdOrSlug);
+		} catch (NumberFormatException e) {
+			threadTempID = -1L;
+		}
 		final List<Long> parentsID = jdbcTemplate.query(
-				"SELECT post_id FROM posts",
+				"SELECT post_id FROM posts " +
+					"NATURAL JOIN threads NATURAL JOIN threads_extra " +
+					"WHERE thread_id=? OR LOWER(slug)=LOWER(?::citext)",
+				new Object[] {threadTempID, threadIdOrSlug},
 				(resultSet, i) -> resultSet.getLong("post_id")
 		);
 		for (PostModel post : posts) {
@@ -363,23 +372,23 @@ public class ThreadDAO {
 	                                ThreadUpdateModel threadUpdate) {
 
 		final ThreadModel threadModel = getFullThreadByIdOrSlug(threadIdOrSlug);
-		if (!threadUpdate.getMessage().isEmpty() && !threadUpdate.getTitle().isEmpty()) {
+		if (threadUpdate.getMessage() != null && threadUpdate.getTitle() != null) {
 			jdbcTemplate.update(
 					"UPDATE threads_extra SET message=?, title=? WHERE thread_id=?",
 					threadUpdate.getMessage(), threadUpdate.getTitle(),
 					threadModel.getThreadId()
 			);
 		}
-		if (!threadUpdate.getMessage().isEmpty() && threadUpdate.getTitle().isEmpty()) {
+		if (threadUpdate.getMessage() != null && threadUpdate.getTitle() == null) {
 			jdbcTemplate.update(
 					"UPDATE threads_extra SET message=? WHERE thread_id=?",
 					threadUpdate.getMessage(),
 					threadModel.getThreadId()
 			);
 		}
-		if (threadUpdate.getMessage().isEmpty() && !threadUpdate.getTitle().isEmpty()) {
+		if (threadUpdate.getMessage() == null  && threadUpdate.getTitle() != null) {
 			jdbcTemplate.update(
-					"UPDATE threads_extra SET message=?, title=? WHERE thread_id=?",
+					"UPDATE threads_extra SET title=? WHERE thread_id=?",
 					threadUpdate.getTitle(),
 					threadModel.getThreadId()
 			);

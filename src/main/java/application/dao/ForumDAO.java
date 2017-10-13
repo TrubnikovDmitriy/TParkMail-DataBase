@@ -87,7 +87,7 @@ public class ForumDAO {
 	public ForumModel getForumBySlug(String forumSlug) {
 		final ForumModel forumModel = jdbcTemplate.queryForObject(
 				"SELECT slug, title, admin_id, forum_id " +
-					"FROM forums WHERE LOWER(slug)=LOWER(?)",
+					"FROM forums WHERE LOWER(slug)=LOWER(?::citext)",
 				new Object[] {forumSlug},
 				new ForumModel.ForumMapper()
 		);
@@ -116,17 +116,6 @@ public class ForumDAO {
 				)
 		);
 		return forumModel;
-//      Нужна ли лямбда?
-//				new RowMapper<ForumModel>() {
-//					@Override
-//					public ForumModel mapRow(ResultSet rs, int rowNum) throws SQLException {
-//						final ForumModel forumModel = new ForumModel();
-//						forumModel.setSlug(rs.getString("slug"));
-//						forumModel.setTitle(rs.getString("title"));
-//						forumModel.setAdminID(rs.getInt("admin_id"));
-//						return forumModel;
-//					}
-//				});
 	}
 
 	public List<ThreadModel> getThreads(String forumSlug, Integer limit,
@@ -178,13 +167,13 @@ public class ForumDAO {
 	public List<UserModel> getUsers(String forumSlug,
 			Integer limit, String since, Boolean desc) {
 		jdbcTemplate.queryForObject(
-				"SELECT forum_id FROM forums WHERE slug=?",
+				"SELECT forum_id FROM forums WHERE LOWER(slug)=LOWER(?::citext)",
 				Integer.class, forumSlug
 		); // Проверка, что форум вообще существует
 		final StringBuilder query = new StringBuilder(
 				"SELECT DISTINCT ux.about, ux.email, ux.fullname, u.nickname, u.user_id " +
 				"FROM forums f JOIN threads th " +
-				"ON f.slug=? AND f.forum_id=th.forum_id " +
+				"ON LOWER(f.slug)=LOWER(?::citext) AND f.forum_id=th.forum_id " +
 				"LEFT JOIN posts p " +
 				"ON th.thread_id=p.thread_id " +
 				"JOIN users u " +
@@ -192,13 +181,11 @@ public class ForumDAO {
 				"NATURAL JOIN users_extra ux ");
 		if (since != null) {
 			query.append(desc ?
-					"WHERE nickname < ? " :
-					"WHERE nickname > ? "
+					"WHERE nickname < ?::citext " :
+					"WHERE nickname > ?::citext "
 			);
 		}
 		query.append(desc ?
-//				"ORDER BY (nickname COLLATE ucs_basic) DESC LIMIT ?" :
-//				"ORDER BY (nickname COLLATE ucs_basic) ASC LIMIT ?"
 				"ORDER BY nickname DESC LIMIT ? " :
 				"ORDER BY nickname ASC LIMIT ? "
 		);
