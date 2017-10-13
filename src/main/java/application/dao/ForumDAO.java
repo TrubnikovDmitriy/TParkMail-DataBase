@@ -109,8 +109,8 @@ public class ForumDAO {
 		forumModel.setPosts(
 				jdbcTemplate.queryForObject(
 					"SELECT COUNT(p.post_id) FROM forums f JOIN threads th " +
-							"ON LOWER(f.slug)=LOWER(?) AND f.forum_id=th.forum_id " +
-							"NATURAL JOIN posts p",
+							"ON LOWER(f.slug)=LOWER(?::citext) AND f.forum_id=th.forum_id " +
+							"JOIN posts p ON th.thread_id=p.thread_id",
 					Integer.class,
 					forumSlug
 				)

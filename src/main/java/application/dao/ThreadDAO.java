@@ -192,6 +192,25 @@ public class ThreadDAO {
 
 	}
 
+	public ThreadModel getFullThreadById(Long threadId) {
+		return jdbcTemplate.queryForObject(
+				"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
+						"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
+						"SUM(v.voice) AS votes " +
+						"FROM threads th JOIN forums f " +
+						"ON f.forum_id=th.forum_id " +
+						"JOIN threads_extra th_x ON " +
+						"th_x.thread_id=th.thread_id AND th_x.thread_id=? " +
+						"JOIN users u ON th.author_id=u.user_id " +
+						"LEFT JOIN votes v ON th.thread_id=v.thread_id " +
+						"GROUP BY th.thread_id, nickname, created, f.slug, " +
+						"th_x.message, th_x.slug, th_x.title",
+				new Object[] {threadId},
+				new ThreadModel.ThreadMapper()
+		);
+
+	}
+
 	public boolean checkParents(List<PostModel> posts, String threadIdOrSlug) {
 		Long threadTempID;
 		try {
