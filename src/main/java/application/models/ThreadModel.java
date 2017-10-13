@@ -35,6 +35,15 @@ public class ThreadModel {
 		this.threadId = threadId;
 	}
 
+	public void updateThread(ThreadUpdateModel updateThread) {
+		if (!updateThread.getTitle().isEmpty()) {
+			this.title = updateThread.getTitle();
+		}
+		if (!updateThread.getMessage().isEmpty()) {
+			this.message = updateThread.getMessage();
+		}
+	}
+
 	public String getAuthor() {
 		return author;
 	}

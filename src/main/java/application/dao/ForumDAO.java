@@ -4,13 +4,10 @@ package application.dao;
 import application.models.ForumModel;
 import application.models.ThreadModel;
 import application.models.UserModel;
-import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.Date;
-import java.sql.Timestamp;
 import java.util.List;
 
 

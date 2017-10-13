@@ -1,17 +1,13 @@
 package application.dao;
 
-import application.models.PostModel;
-import application.models.ThreadModel;
-import application.models.UserModel;
-import application.models.VoteModel;
+import application.models.*;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.sql.*;
+import java.util.Date;
 import java.util.List;
 
 
@@ -72,10 +68,11 @@ public class ThreadDAO {
 				(rs, rowNum) -> rs.getLong("nextval")
 		);
 
-		final Long currentTime = new java.util.Date().getTime();
+		final Long currentTime = new Date().getTime();
 
 		jdbcTemplate.batchUpdate(
-				"INSERT INTO posts(post_id, thread_id, author_id, path) VALUES (?,?,?,?)",
+				"INSERT INTO posts(post_id, thread_id, author_id, parent_id) " +
+						"VALUES (?,?,?,?)",
 				new BatchPreparedStatementSetter() {
 					@Override
 					public void setValues(PreparedStatement ps, int rowNumber)
@@ -92,19 +89,15 @@ public class ThreadDAO {
 						);
 						post.setForumSlug(thread.getForumSlug());
 						post.setCreated(new Timestamp(currentTime));
-						post.setPath((post.getParentId() == null || post.getParentId() == 0) ?
-								post.getPostId().toString() :
-								jdbcTemplate.queryForObject(
-										"SELECT path FROM posts " +
-												"WHERE post_id=?",
-										Long.class, post.getParentId()) + "."
-										+ post.getPostId().toString()
-						);
 
 						ps.setLong(1, post.getPostId());
 						ps.setLong(2, post.getThreadId());
 						ps.setLong(3, post.getAuthorId());
-						ps.setString(4, post.getPath());
+						if (post.getParentId() != null) {
+							ps.setLong(4, post.getParentId());
+						} else {
+							ps.setNull(4, Types.INTEGER);
+						}
 
 						posts.set(rowNumber, post);
 					}
@@ -117,11 +110,13 @@ public class ThreadDAO {
 		);
 
 		jdbcTemplate.batchUpdate(
-				"INSERT INTO posts_extra(post_id, created, message) VALUES (?, ?, ?)",
+			"INSERT INTO posts_extra(post_id, created, message) " +
+					"VALUES (?, ?, ?)",
 				new BatchPreparedStatementSetter() {
 					@Override
 					public void setValues(PreparedStatement ps, int rowNumber)
 							throws SQLException {
+
 						ps.setLong(1, posts.get(rowNumber).getPostId());
 						ps.setTimestamp(2, posts.get(rowNumber).getCreated());
 						ps.setString(3, posts.get(rowNumber).getMessage());
@@ -195,6 +190,202 @@ public class ThreadDAO {
 				new ThreadModel.ThreadMapper()
 		);
 
+	}
+
+	public boolean checkParents(List<PostModel> posts) {
+		final List<Long> parentsID = jdbcTemplate.query(
+				"SELECT post_id FROM posts",
+				(resultSet, i) -> resultSet.getLong("post_id")
+		);
+		for (PostModel post : posts) {
+			if (post.getParentId() == null) {
+				continue;
+			}
+			if (!parentsID.contains(post.getParentId())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public List<PostModel> getPosts(String threadIdOrSlug, Integer limit,
+	                                String sort, Boolean desc, Long since) {
+
+		final ThreadModel threadModel = this.getThreadByIdOrSlug(threadIdOrSlug);
+		final StringBuilder query;
+		switch (sort) {
+			case "flat":
+				query = new StringBuilder(
+						"SELECT nickname AS author, created, slug AS forum, post_id AS id, path," +
+								"isedited, message, parent_id AS parent, th.thread_id AS thread " +
+								"FROM posts p NATURAL JOIN posts_extra px " +
+								"JOIN threads th ON th.thread_id=? AND p.thread_id=th.thread_id " +
+								"NATURAL JOIN forums f " +
+								"JOIN users u ON u.user_id=p.author_id "
+				);
+				if (since != null) {
+					query.append("WHERE post_id ");
+					query.append(desc ? "<" : ">");
+					query.append(" ? ");
+				}
+				if (desc) {
+					query.append("ORDER BY created DESC, post_id DESC LIMIT ?");
+				} else {
+					query.append("ORDER BY created, post_id LIMIT ?");
+				}
+
+
+				if (since != null) {
+					return jdbcTemplate.query(
+							query.toString(),
+							new Object[]{threadModel.getThreadId(), since, limit},
+							new PostModel.PostMapper()
+					);
+				} else {
+					return jdbcTemplate.query(
+							query.toString(),
+							new Object[]{threadModel.getThreadId(), limit},
+							new PostModel.PostMapper()
+					);
+				}
+			case "tree":
+			query = new StringBuilder(
+						"SELECT nickname AS author, created, slug AS forum, post_id AS id, path," +
+								"isedited, message, parent_id AS parent, th.thread_id AS thread " +
+								"FROM posts p NATURAL JOIN posts_extra px " +
+								"JOIN threads th ON th.thread_id=? AND p.thread_id=th.thread_id " +
+								"NATURAL JOIN forums f " +
+								"JOIN users u ON u.user_id = p.author_id "
+				);
+				if (since != null) {
+					query.append("WHERE path");
+					query.append(desc ? " < " : " > ");
+					query.append("(SELECT path AS since_path FROM posts WHERE post_id=?)");
+				}
+				if (desc) {
+					query.append("ORDER BY path DESC LIMIT ?");
+				} else {
+					query.append("ORDER BY path LIMIT ?");
+				}
+
+
+				if (since != null) {
+					return jdbcTemplate.query(
+							query.toString(),
+							new Object[]{threadModel.getThreadId(), since, limit},
+							new PostModel.PostMapper()
+					);
+				} else {
+					return jdbcTemplate.query(
+							query.toString(),
+							new Object[]{threadModel.getThreadId(), limit},
+							new PostModel.PostMapper()
+					);
+				}
+			case "parent_tree":
+				if (since == null) {
+					query = new StringBuilder(
+							"SELECT nickname AS author, created, slug AS forum, post_id AS id, path, " +
+									"isedited, message, parent_id AS parent, th.thread_id AS thread " +
+									"FROM posts p NATURAL JOIN posts_extra px " +
+									"JOIN threads th ON p.thread_id=th.thread_id " +
+									"NATURAL JOIN forums f " +
+									"JOIN users u ON u.user_id = p.author_id " +
+									"JOIN (" +
+									"SELECT path AS root_path " +
+									"FROM posts WHERE array_length(path, 1) = 1 " +
+									"AND thread_id=? "
+					);
+					if (desc) {
+						query.append("ORDER BY path DESC LIMIT ?) AS root_posts ON path && root_path ORDER BY path DESC");
+					} else {
+						query.append("ORDER BY path ASC LIMIT ?) AS root_posts ON path && root_path ORDER BY path ASC");
+					}
+						return jdbcTemplate.query(
+								query.toString(),
+								new Object[]{threadModel.getThreadId(), limit},
+								new PostModel.PostMapper()
+						);
+				} else {
+					if (desc) {
+						query = new StringBuilder(
+								"SELECT nickname AS author, created, slug AS forum, post_id AS id, path, " +
+										"isedited, message, parent_id AS parent, th.thread_id AS thread " +
+										"FROM posts p NATURAL JOIN posts_extra px " +
+										"JOIN threads th ON p.thread_id=th.thread_id " +
+										"NATURAL JOIN forums f " +
+										"JOIN users u ON u.user_id = p.author_id " +
+										"JOIN ( " +
+										"SELECT path AS root_path FROM posts " +
+										"WHERE thread_id=? AND array_length(path, 1) = 1 " +
+										"AND path[1] <= ( " +
+										"SELECT path[1] AS since_path FROM posts " +
+										"WHERE post_id=?" +
+										") ORDER BY path DESC LIMIT ? " +
+										") AS root_posts ON path && root_path " +
+										"WHERE path < (" +
+										"SELECT path FROM posts WHERE post_id=? " +
+										") ORDER BY path DESC");
+					} else {
+						query = new StringBuilder(
+								"SELECT nickname AS author, created, slug AS forum, post_id AS id, path, " +
+										"isedited, message, parent_id AS parent, th.thread_id AS thread " +
+										"FROM posts p NATURAL JOIN posts_extra px " +
+										"JOIN threads th ON p.thread_id=th.thread_id " +
+										"NATURAL JOIN forums f " +
+										"JOIN users u ON u.user_id = p.author_id " +
+										"JOIN ( " +
+										"SELECT path AS root_path FROM posts " +
+										"WHERE thread_id=? AND array_length(path, 1) = 1 " +
+										"AND path[1] >= ( " +
+										"SELECT path[1] AS since_path FROM posts " +
+										"WHERE post_id=?" +
+										") ORDER BY path ASC LIMIT ? " +
+										") AS root_posts ON path && root_path " +
+										"WHERE path > (" +
+										"SELECT path FROM posts WHERE post_id=? " +
+										") ORDER BY path");
+					}
+					return jdbcTemplate.query(
+							query.toString(),
+							new Object[]{threadModel.getThreadId(), since, limit, since},
+							new PostModel.PostMapper()
+					);
+				}
+
+			default:
+				return null;
+
+		}
+	}
+
+	public ThreadModel updateThread(String threadIdOrSlug,
+	                                ThreadUpdateModel threadUpdate) {
+
+		final ThreadModel threadModel = getFullThreadByIdOrSlug(threadIdOrSlug);
+		if (!threadUpdate.getMessage().isEmpty() && !threadUpdate.getTitle().isEmpty()) {
+			jdbcTemplate.update(
+					"UPDATE threads_extra SET message=?, title=? WHERE thread_id=?",
+					threadUpdate.getMessage(), threadUpdate.getTitle(),
+					threadModel.getThreadId()
+			);
+		}
+		if (!threadUpdate.getMessage().isEmpty() && threadUpdate.getTitle().isEmpty()) {
+			jdbcTemplate.update(
+					"UPDATE threads_extra SET message=? WHERE thread_id=?",
+					threadUpdate.getMessage(),
+					threadModel.getThreadId()
+			);
+		}
+		if (threadUpdate.getMessage().isEmpty() && !threadUpdate.getTitle().isEmpty()) {
+			jdbcTemplate.update(
+					"UPDATE threads_extra SET message=?, title=? WHERE thread_id=?",
+					threadUpdate.getTitle(),
+					threadModel.getThreadId()
+			);
+		}
+		threadModel.updateThread(threadUpdate);
+		return threadModel;
 	}
 
 }

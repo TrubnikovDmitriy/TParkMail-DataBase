@@ -3,7 +3,10 @@ package application.models;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.jdbc.core.RowMapper;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 
 @SuppressWarnings("unused")
@@ -14,7 +17,7 @@ public class PostModel {
 	@JsonProperty(required = true)
 	private String message;
 	@JsonProperty(value = "parent", required = true)
-	private Integer parentId;
+	private Long parentId;
 
 	@JsonProperty(defaultValue = "false")
 	private Boolean isEdited;
@@ -82,11 +85,11 @@ public class PostModel {
 		this.created = created;
 	}
 
-	public Integer getParentId() {
+	public Long getParentId() {
 		return parentId;
 	}
 
-	public void setParentId(Integer parentId) {
+	public void setParentId(Long parentId) {
 		this.parentId = parentId;
 	}
 
@@ -128,5 +131,24 @@ public class PostModel {
 
 	public void setAuthorId(Long authorId) {
 		this.authorId = authorId;
+	}
+
+	public static final class PostMapper implements RowMapper<PostModel> {
+		@Override
+		public PostModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+			final PostModel postModel = new PostModel();
+			postModel.author = rs.getString("author");
+			postModel.created = rs.getTimestamp("created");
+			postModel.forumSlug = rs.getString("forum");
+			postModel.postId = rs.getLong("id");
+			postModel.message = rs.getString("message");
+			postModel.isEdited = rs.getBoolean("isedited");
+			postModel.parentId = rs.getLong("parent");
+			postModel.threadId = rs.getLong("thread");
+			if (postModel.parentId == null) {
+				postModel.parentId = 0L;
+			}
+			return postModel;
+		}
 	}
 }

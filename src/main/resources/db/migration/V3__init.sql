@@ -104,7 +104,8 @@ CREATE TABLE posts_extra (
     post_id integer NOT NULL,
     created timestamp with time zone DEFAULT now() NOT NULL,
     message text NOT NULL,
-    isedited boolean DEFAULT false NOT NULL
+    isedited boolean DEFAULT false NOT NULL,
+    parent_id integer
 );
 
 
@@ -373,6 +374,14 @@ CREATE UNIQUE INDEX users_nickname_uindex ON users USING btree (nickname);
 
 ALTER TABLE ONLY forums
     ADD CONSTRAINT forums_users_user_id_fk FOREIGN KEY (admin_id) REFERENCES users(user_id);
+
+
+--
+-- Name: posts_extra_parent_id_post_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
+--
+
+ALTER TABLE ONLY posts_extra
+    ADD CONSTRAINT posts_extra_parent_id_post_id_fk FOREIGN KEY (parent_id) REFERENCES posts(post_id);
 
 
 --

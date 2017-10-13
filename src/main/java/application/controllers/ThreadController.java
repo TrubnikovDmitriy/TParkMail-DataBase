@@ -4,6 +4,7 @@ package application.controllers;
 import application.dao.ThreadDAO;
 import application.models.PostModel;
 import application.models.ThreadModel;
+import application.models.ThreadUpdateModel;
 import application.models.VoteModel;
 import application.views.ErrorView;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -25,23 +26,28 @@ public class ThreadController{
 	}
 
 	@PostMapping(path = "/create")
-	public ResponseEntity createPost(
+	public ResponseEntity createPosts(
 			@PathVariable String threadIdOrSlug,
 			@RequestBody List<PostModel> posts) {
 
-//		try {
+		try {
+			if (!threadDAO.checkParents(posts)) {
+				return new ResponseEntity<ErrorView>(
+						new ErrorView("Одно или несколько из родительских сообщений отстувуют"),
+						HttpStatus.CONFLICT
+				);
+			}
 			return new ResponseEntity<List<PostModel>>(
 					threadDAO.createNewPosts(threadIdOrSlug, posts),
 					HttpStatus.CREATED
 			);
-//		}
-//		TODO Error 404,409 /forum/{slug_or_id}/create
-//		catch (RuntimeException e) {
-//			return new ResponseEntity<ErrorView>(
-//					new ErrorView(e.getMessage()),
-//					HttpStatus.BAD_REQUEST
-//			);
-//		}
+		}
+		catch (EmptyResultDataAccessException e) {
+			return new ResponseEntity<ErrorView>(
+					new ErrorView(e.getMessage()),
+					HttpStatus.NOT_FOUND
+			);
+		}
 
 	}
 
@@ -68,6 +74,45 @@ public class ThreadController{
 		try {
 			return new ResponseEntity<ThreadModel>(
 					threadDAO.getFullThreadByIdOrSlug(threadIdOrSlug),
+					HttpStatus.OK
+			);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return new ResponseEntity<ErrorView>(
+					new ErrorView(e.getMessage()),
+					HttpStatus.NOT_FOUND
+			);
+		}
+	}
+
+	@PostMapping(path = "/details")
+	public ResponseEntity updateThread(
+			@PathVariable  String threadIdOrSlug,
+			@RequestBody ThreadUpdateModel threadUpdate) {
+		try {
+			return new ResponseEntity<ThreadModel>(
+					threadDAO.updateThread(threadIdOrSlug, threadUpdate),
+					HttpStatus.OK
+			);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return new ResponseEntity<ErrorView>(
+					new ErrorView(e.getMessage()),
+					HttpStatus.NOT_FOUND
+			);
+		}
+	}
+
+	@GetMapping(path = "/posts")
+	public ResponseEntity getPosts(
+			@PathVariable String threadIdOrSlug,
+			@RequestParam(name = "limit", required = false, defaultValue = "100") Integer limit,
+			@RequestParam(name = "sort", required = false, defaultValue = "flat") String sort,
+			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
+			@RequestParam(name = "since", required = false) Long since) {
+		try {
+			return new ResponseEntity<List<PostModel>>(
+					threadDAO.getPosts(threadIdOrSlug, limit, sort, desc, since),
 					HttpStatus.OK
 			);
 		}

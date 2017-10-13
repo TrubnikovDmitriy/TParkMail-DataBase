@@ -43,6 +43,21 @@ COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings
 
 SET search_path = public, pg_catalog;
 
+--
+-- Name: trigger_for_create_path(); Type: FUNCTION; Schema: public; Owner: trubnikov
+--
+
+CREATE FUNCTION trigger_for_create_path() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+  NEW.path =
+  ((SELECT path FROM posts WHERE post_id=NEW.parent_id) || NEW.post_id);
+  RETURN NEW;
+END$$;
+
+
+ALTER FUNCTION public.trigger_for_create_path() OWNER TO trubnikov;
+
 SET default_tablespace = '';
 
 SET default_with_oids = false;
@@ -90,7 +105,8 @@ CREATE TABLE posts (
     post_id integer NOT NULL,
     thread_id integer NOT NULL,
     author_id integer NOT NULL,
-    path text
+    path integer[] NOT NULL,
+    parent_id integer
 );
 
 
@@ -343,7 +359,7 @@ CREATE UNIQUE INDEX forums_slug_uindex ON forums USING btree (slug);
 -- Name: posts_path_uindex; Type: INDEX; Schema: public; Owner: trubnikov
 --
 
-CREATE UNIQUE INDEX posts_path_uindex ON posts USING btree (path_str);
+CREATE UNIQUE INDEX posts_path_uindex ON posts USING btree (path);
 
 
 --
@@ -368,6 +384,13 @@ CREATE UNIQUE INDEX users_nickname_uindex ON users USING btree (nickname);
 
 
 --
+-- Name: generate_path; Type: TRIGGER; Schema: public; Owner: trubnikov
+--
+
+CREATE TRIGGER generate_path BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE trigger_for_create_path();
+
+
+--
 -- Name: forums_users_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
 --
 
@@ -381,6 +404,14 @@ ALTER TABLE ONLY forums
 
 ALTER TABLE ONLY posts_extra
     ADD CONSTRAINT posts_extra_posts_post_id_fk FOREIGN KEY (post_id) REFERENCES posts(post_id) ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+--
+-- Name: posts_posts_post_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
+--
+
+ALTER TABLE ONLY posts
+    ADD CONSTRAINT posts_posts_post_id_fk FOREIGN KEY (parent_id) REFERENCES posts(post_id) ON UPDATE CASCADE;
 
 
 --
