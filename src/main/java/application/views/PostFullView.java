@@ -3,9 +3,9 @@ package application.views;
 import application.models.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+
 @SuppressWarnings("unused")
 public class PostFullView {
-
 
 	@JsonProperty(value = "post")
 	private PostModel postModel;
@@ -25,8 +25,6 @@ public class PostFullView {
 		this.forumModel = forumModel;
 		this.threadModel = threadModel;
 	}
-
-
 
 	public UserModel getUserModel() {
 		return userModel;

@@ -2,6 +2,7 @@ package application.views;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+
 public class ErrorView {
 
 	@JsonProperty("message")
@@ -14,8 +15,4 @@ public class ErrorView {
 	public String getMessage() {
 		return message;
 	}
-
-//	public void setMessage(String message) {
-//		this.message = message;
-//	}
 }

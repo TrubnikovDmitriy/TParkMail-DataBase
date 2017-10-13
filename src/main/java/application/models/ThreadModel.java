@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.RowMapper;
 
 import java.sql.*;
 
+
 @SuppressWarnings("unused")
 public class ThreadModel {
 

@@ -7,6 +7,7 @@ import org.springframework.jdbc.core.RowMapper;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
+
 @SuppressWarnings("unused")
 public class ForumModel {
 
@@ -86,7 +87,6 @@ public class ForumModel {
 	public void setPosts(Integer posts) {
 		this.posts = posts;
 	}
-
 
 	public static final class ForumMapper implements RowMapper<ForumModel> {
 		@Override

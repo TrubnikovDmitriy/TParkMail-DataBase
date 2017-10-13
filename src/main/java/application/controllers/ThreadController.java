@@ -1,6 +1,5 @@
 package application.controllers;
 
-
 import application.dao.ThreadDAO;
 import application.models.PostModel;
 import application.models.ThreadModel;
@@ -13,6 +12,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+
 
 @RestController
 @CrossOrigin(origins = "*")

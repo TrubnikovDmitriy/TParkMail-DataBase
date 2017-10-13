@@ -1,9 +1,7 @@
 package application.models;
 
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import javax.validation.constraints.NotNull;
 
 @SuppressWarnings("unused")
 public class VoteModel {
@@ -12,7 +10,6 @@ public class VoteModel {
 	private String nickname;
 
 	@JsonProperty(required = true)
-	@JsonFormat(shape = JsonFormat.Shape.NUMBER_INT, pattern = "[-1,+1]") // TODO wtf?
 	private String voice;
 
 

@@ -2,12 +2,11 @@ package application.dao;
 
 import application.models.UserModel;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.lang.Nullable;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.validation.constraints.NotNull;
 import java.util.List;
+
 
 @Repository
 public class UserDAO {

@@ -1,6 +1,5 @@
 package application.dao;
 
-
 import application.models.ForumModel;
 import application.models.ThreadModel;
 import application.models.UserModel;

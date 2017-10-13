@@ -13,7 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.sql.Date;
+import java.util.Date;
 import java.util.List;
 
 
@@ -108,7 +108,7 @@ public class ForumController{
 			@RequestParam(name = "limit", required = false, defaultValue = "100") Integer limit,
 			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
 			@RequestParam(name = "since", required = false)
-			@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX") java.util.Date since) {
+			@DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX") Date since) {
 
 		try {
 			final List<ThreadModel> threads = forumDAO.getThreads(forumSlug, limit, since, desc);
