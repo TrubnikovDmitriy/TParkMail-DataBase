@@ -135,8 +135,8 @@ public class ForumController{
 	public ResponseEntity getUsers(
 			@PathVariable String forumSlug,
 			@RequestParam(name = "limit", required = false, defaultValue = "100") Integer limit,
-			@RequestParam(name = "since", required = false, defaultValue = "") String since,
-			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc) {
+			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
+			@RequestParam(name = "since", required = false) String since) {
 
 		try {
 			final List<UserModel> users = forumDAO.getUsers(forumSlug, limit, since, desc);
@@ -154,7 +154,7 @@ public class ForumController{
 		catch (RuntimeException e) {
 			return new ResponseEntity<ErrorView>(
 					new ErrorView(e.getMessage()),
-					HttpStatus.NOT_FOUND
+					HttpStatus.BAD_REQUEST
 			);
 		}
 	}

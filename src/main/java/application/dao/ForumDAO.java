@@ -181,7 +181,7 @@ public class ForumDAO {
 				"SELECT forum_id FROM forums WHERE slug=?",
 				Integer.class, forumSlug
 		); // Проверка, что форум вообще существует
-		final String query =
+		final StringBuilder query = new StringBuilder(
 				"SELECT DISTINCT ux.about, ux.email, ux.fullname, u.nickname, u.user_id " +
 				"FROM forums f JOIN threads th " +
 				"ON f.slug=? AND f.forum_id=th.forum_id " +
@@ -189,14 +189,31 @@ public class ForumDAO {
 				"ON th.thread_id=p.thread_id " +
 				"JOIN users u " +
 				"ON th.author_id=u.user_id OR p.author_id=u.user_id " +
-				"NATURAL JOIN users_extra ux " +
-				"WHERE nickname > ? ORDER BY nickname " +
-				(desc ? "DESC" : "ASC") +
-				(limit != null ? " LIMIT ?;" : ";");
-		return jdbcTemplate.query(
-				query,
-				new Object[] {forumSlug, since, limit},
-				new UserModel.UserMapper()
+				"NATURAL JOIN users_extra ux ");
+		if (since != null) {
+			query.append(desc ?
+					"WHERE nickname < ? " :
+					"WHERE nickname > ? "
+			);
+		}
+		query.append(desc ?
+//				"ORDER BY (nickname COLLATE ucs_basic) DESC LIMIT ?" :
+//				"ORDER BY (nickname COLLATE ucs_basic) ASC LIMIT ?"
+				"ORDER BY nickname DESC LIMIT ? " :
+				"ORDER BY nickname ASC LIMIT ? "
 		);
+		if (since == null) {
+			return jdbcTemplate.query(
+					query.toString(),
+					new Object[]{forumSlug, limit},
+					new UserModel.UserMapper()
+			);
+		} else {
+			return jdbcTemplate.query(
+					query.toString(),
+					new Object[]{forumSlug, since, limit},
+					new UserModel.UserMapper()
+			);
+		}
 	}
 }
