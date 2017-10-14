@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @CrossOrigin(origins = "*")
-@RequestMapping(path = "/post/{postId}")
+@RequestMapping(path = "/api/post/{postId}")
 public class PostController {
 
 	private final PostDAO postDAO;

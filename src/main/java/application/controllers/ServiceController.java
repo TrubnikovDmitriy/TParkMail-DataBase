@@ -9,7 +9,7 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @CrossOrigin(origins = "*")
-@RequestMapping(path = "/service")
+@RequestMapping(path = "/api/service")
 public class ServiceController {
 
 	private final ServiceDAO serviceDAO;

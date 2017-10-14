@@ -16,7 +16,7 @@ import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "*")
-@RequestMapping(path = "/thread/{threadIdOrSlug}")
+@RequestMapping(path = "/api/thread/{threadIdOrSlug}")
 public class ThreadController{
 
 	private final ThreadDAO threadDAO;
