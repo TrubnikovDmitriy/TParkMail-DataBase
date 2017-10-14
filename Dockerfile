@@ -21,6 +21,7 @@ USER postgres
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER trubnikov WITH SUPERUSER PASSWORD 'pass';" &&\
     psql --command "CREATE DATABASE tech_park OWNER trubnikov;" &&\
+    psql tech_park < /opt/DataBase/src/main/resources/db/migration/V4__init.sql &&\
     /etc/init.d/postgresql stop
 
 
@@ -32,9 +33,8 @@ EXPOSE 5432
 
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
-RUN /etc/init.d/postgresql start &&\
-    psql tech_park < /opt/DataBase/src/main/resources/db/migration/V4__init.sql &&\
-    /etc/init.d/postgresql stop
+#RUN /etc/init.d/postgresql start &&\
+#    /etc/init.d/postgresql stop
 
 USER root
 
