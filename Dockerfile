@@ -11,7 +11,6 @@ RUN apt-get install -y openjdk-8-jdk-headless
 RUN apt-get install -y maven
 
 ENV WORK /opt/DataBase
-ADD target/ $WORK/target/
 ADD src/ $WORK/src/
 ADD / $WORK/
 WORKDIR $WORK/
