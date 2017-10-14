@@ -15,7 +15,7 @@ import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "*")
-@RequestMapping(path = "/user/{nickname}")
+@RequestMapping(path = "/api/user/{nickname}")
 public class UserController {
 
 	private final UserDAO userDAO;

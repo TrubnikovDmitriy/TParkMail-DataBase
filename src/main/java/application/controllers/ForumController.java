@@ -19,7 +19,7 @@ import java.util.List;
 
 @RestController
 @CrossOrigin(origins = "*")
-@RequestMapping(path = "/forum")
+@RequestMapping(path = "/api/forum")
 public class ForumController{
 
 	private final ThreadDAO threadDAO;
