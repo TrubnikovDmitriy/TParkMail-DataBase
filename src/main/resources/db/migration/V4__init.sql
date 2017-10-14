@@ -202,7 +202,7 @@ ALTER SEQUENCE threads_thread_id_seq OWNED BY threads.thread_id;
 
 CREATE TABLE users (
     user_id integer NOT NULL,
-    nickname citext COLLATE pg_catalog.ucs_basic NOT NULL
+    nickname citext NOT NULL
 );
 
 

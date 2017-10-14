@@ -10,6 +10,12 @@ RUN apt-get install -y postgresql-$PGVER
 RUN apt-get install -y openjdk-8-jdk-headless
 RUN apt-get install -y maven
 
+ENV WORK /opt/DataBase
+ADD target/ $WORK/target/
+ADD src/ $WORK/src/
+ADD / $WORK/
+WORKDIR $WORK/
+
 USER postgres
 
 RUN /etc/init.d/postgresql start &&\
@@ -26,15 +32,11 @@ EXPOSE 5432
 
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
+RUN /etc/init.d/postgresql start &&\
+    psql tech_park < /opt/DataBase/src/main/resources/db/migration/V4__init.sql &&\
+    /etc/init.d/postgresql stop
+
 USER root
-
-ENV WORK /opt/DataBase
-ADD target/ $WORK/target/
-ADD src/ $WORK/src/
-ADD / $WORK/
-WORKDIR $WORK/
-
-RUN mvn package
 
 EXPOSE 5000
 
