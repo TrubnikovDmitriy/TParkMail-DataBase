@@ -33,11 +33,10 @@ EXPOSE 5432
 
 VOLUME  ["/etc/postgresql", "/var/log/postgresql", "/var/lib/postgresql"]
 
-#RUN /etc/init.d/postgresql start &&\
-#    /etc/init.d/postgresql stop
-
 USER root
 
 EXPOSE 5000
+
+RUN mvn install
 
 CMD service postgresql start && java -Xms300M -Xmx300M -jar $WORK/target/tech-db-1.0-SNAPSHOT.jar
