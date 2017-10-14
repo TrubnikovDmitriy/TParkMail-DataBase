@@ -10,10 +10,6 @@ RUN apt-get install -y postgresql-$PGVER
 
 USER postgres
 
-RUN /etc/init.d/postgresql start &&\
-    psql --command "CREATE USER trubnikov WITH SUPERUSER PASSWORD 'pass';" &&\
-    createdb -O trubnikov tech_park &&\
-    /etc/init.d/postgresql stop
 
 RUN echo "host all  all    0.0.0.0/0  md5" >> /etc/postgresql/$PGVER/main/pg_hba.conf
 
@@ -34,12 +30,18 @@ ADD src/ $WORK/src/
 ADD / $WORK/
 
 WORKDIR $WORK/
-USER postgres
-RUN /etc/init.d/postgresql start &&\
-    psql --command "\i ./src/main/resources/db/migration/V4__init.sql"  &&\
-    /etc/init.d/postgresql stop
-USER root
 
 EXPOSE 5000
+
+USER postgres
+RUN /etc/init.d/postgresql start &&\
+    psql --command "CREATE USER trubnikov WITH SUPERUSER PASSWORD 'pass';" &&\
+    psql --command "CREATE DATABASE tech_park OWNER trubnikov;" &&\
+    psql --command "\i /opt/DataBase/src/main/resources/db/migration/V4__init.sql"  &&\
+    psql --command "\d"  &&\
+    psql --command "\l"  &&\
+    psql --command "\du"  &&\
+    /etc/init.d/postgresql stop
+USER root
 
 CMD service postgresql start && java -Xms300M -Xmx300M -jar $WORK/target/tech-db-1.0-SNAPSHOT.jar
