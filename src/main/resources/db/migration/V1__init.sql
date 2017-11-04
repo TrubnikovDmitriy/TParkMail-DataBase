@@ -2,32 +2,37 @@
 -- PostgreSQL database dump
 --
 
--- Dumped from database version 9.5.8
--- Dumped by pg_dump version 9.5.8
+-- Dumped from database version 9.5.9
+-- Dumped by pg_dump version 9.5.9
 
-SET statement_timeout = 0;
-SET lock_timeout = 0;
+
 SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SET check_function_bodies = false;
-SET client_min_messages = warning;
-SET row_security = off;
-
 --
 -- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
 --
 
 CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
-
-
---
--- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
---
-
 COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+CREATE EXTENSION IF NOT EXISTS citext WITH SCHEMA public;
+COMMENT ON EXTENSION citext IS 'data type for case-insensitive character strings';
 
 
 SET search_path = public, pg_catalog;
+
+--
+-- Name: trigger_for_create_path(); Type: FUNCTION; Schema: public; Owner: trubnikov
+--
+
+CREATE FUNCTION trigger_for_create_path() RETURNS trigger
+    LANGUAGE plpgsql
+    AS $$BEGIN
+  NEW.path =
+  ((SELECT path FROM posts WHERE post_id=NEW.parent_id) || NEW.post_id);
+  RETURN NEW;
+END$$;
+
+
 
 SET default_tablespace = '';
 
@@ -40,12 +45,11 @@ SET default_with_oids = false;
 CREATE TABLE forums (
     forum_id integer NOT NULL,
     admin_id integer NOT NULL,
-    title character varying(500) NOT NULL,
-    slug character varying(300) NOT NULL
+    title text NOT NULL,
+    slug citext NOT NULL
 );
 
 
-ALTER TABLE forums OWNER TO trubnikov;
 
 --
 -- Name: forums_forum_id_seq; Type: SEQUENCE; Schema: public; Owner: trubnikov
@@ -59,7 +63,6 @@ CREATE SEQUENCE forums_forum_id_seq
     CACHE 1;
 
 
-ALTER TABLE forums_forum_id_seq OWNER TO trubnikov;
 
 --
 -- Name: forums_forum_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: trubnikov
@@ -75,12 +78,12 @@ ALTER SEQUENCE forums_forum_id_seq OWNED BY forums.forum_id;
 CREATE TABLE posts (
     post_id integer NOT NULL,
     thread_id integer NOT NULL,
-    author_id integer NOT NULL,
-    parent_id integer
+    path integer[] NOT NULL,
+    parent_id integer,
+    author citext NOT NULL
 );
 
 
-ALTER TABLE posts OWNER TO trubnikov;
 
 --
 -- Name: posts_extra; Type: TABLE; Schema: public; Owner: trubnikov
@@ -89,12 +92,10 @@ ALTER TABLE posts OWNER TO trubnikov;
 CREATE TABLE posts_extra (
     post_id integer NOT NULL,
     created timestamp with time zone DEFAULT now() NOT NULL,
-    message character varying(3000) NOT NULL,
+    message text NOT NULL,
     isedited boolean DEFAULT false NOT NULL
 );
 
-
-ALTER TABLE posts_extra OWNER TO trubnikov;
 
 --
 -- Name: posts_post_id_seq; Type: SEQUENCE; Schema: public; Owner: trubnikov
@@ -107,8 +108,6 @@ CREATE SEQUENCE posts_post_id_seq
     NO MAXVALUE
     CACHE 1;
 
-
-ALTER TABLE posts_post_id_seq OWNER TO trubnikov;
 
 --
 -- Name: posts_post_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: trubnikov
@@ -128,8 +127,6 @@ CREATE TABLE threads (
 );
 
 
-ALTER TABLE threads OWNER TO trubnikov;
-
 --
 -- Name: threads_extra; Type: TABLE; Schema: public; Owner: trubnikov
 --
@@ -137,13 +134,11 @@ ALTER TABLE threads OWNER TO trubnikov;
 CREATE TABLE threads_extra (
     thread_id integer NOT NULL,
     created timestamp with time zone DEFAULT now() NOT NULL,
-    message character varying(5000) NOT NULL,
-    slug character varying(200),
-    title character varying(100) NOT NULL
+    message text NOT NULL,
+    slug citext,
+    title text NOT NULL
 );
 
-
-ALTER TABLE threads_extra OWNER TO trubnikov;
 
 --
 -- Name: threads_thread_id_seq; Type: SEQUENCE; Schema: public; Owner: trubnikov
@@ -156,8 +151,6 @@ CREATE SEQUENCE threads_thread_id_seq
     NO MAXVALUE
     CACHE 1;
 
-
-ALTER TABLE threads_thread_id_seq OWNER TO trubnikov;
 
 --
 -- Name: threads_thread_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: trubnikov
@@ -172,11 +165,9 @@ ALTER SEQUENCE threads_thread_id_seq OWNED BY threads.thread_id;
 
 CREATE TABLE users (
     user_id integer NOT NULL,
-    nickname character varying(30) NOT NULL
+    nickname citext NOT NULL
 );
 
-
-ALTER TABLE users OWNER TO trubnikov;
 
 --
 -- Name: users_extra; Type: TABLE; Schema: public; Owner: trubnikov
@@ -184,13 +175,11 @@ ALTER TABLE users OWNER TO trubnikov;
 
 CREATE TABLE users_extra (
     user_id integer NOT NULL,
-    fullname character varying(35) NOT NULL,
-    email character varying(25) NOT NULL,
-    about character varying(1000)
+    fullname text NOT NULL,
+    email citext NOT NULL,
+    about text
 );
 
-
-ALTER TABLE users_extra OWNER TO trubnikov;
 
 --
 -- Name: users_user_id_seq; Type: SEQUENCE; Schema: public; Owner: trubnikov
@@ -203,8 +192,6 @@ CREATE SEQUENCE users_user_id_seq
     NO MAXVALUE
     CACHE 1;
 
-
-ALTER TABLE users_user_id_seq OWNER TO trubnikov;
 
 --
 -- Name: users_user_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: trubnikov
@@ -223,8 +210,6 @@ CREATE TABLE votes (
     voice smallint NOT NULL
 );
 
-
-ALTER TABLE votes OWNER TO trubnikov;
 
 --
 -- Name: forum_id; Type: DEFAULT; Schema: public; Owner: trubnikov
@@ -326,10 +311,10 @@ CREATE UNIQUE INDEX forums_slug_uindex ON forums USING btree (slug);
 
 
 --
--- Name: posts_post_id_uindex; Type: INDEX; Schema: public; Owner: trubnikov
+-- Name: posts_path_uindex; Type: INDEX; Schema: public; Owner: trubnikov
 --
 
-CREATE UNIQUE INDEX posts_post_id_uindex ON posts USING btree (post_id);
+CREATE UNIQUE INDEX posts_path_uindex ON posts USING btree (path);
 
 
 --
@@ -354,6 +339,13 @@ CREATE UNIQUE INDEX users_nickname_uindex ON users USING btree (nickname);
 
 
 --
+-- Name: generate_path; Type: TRIGGER; Schema: public; Owner: trubnikov
+--
+
+CREATE TRIGGER generate_path BEFORE INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE trigger_for_create_path();
+
+
+--
 -- Name: forums_users_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
 --
 
@@ -374,7 +366,7 @@ ALTER TABLE ONLY posts_extra
 --
 
 ALTER TABLE ONLY posts
-    ADD CONSTRAINT posts_posts_post_id_fk FOREIGN KEY (parent_id) REFERENCES posts(post_id);
+    ADD CONSTRAINT posts_posts_post_id_fk FOREIGN KEY (parent_id) REFERENCES posts(post_id) ON UPDATE CASCADE;
 
 
 --
@@ -386,11 +378,11 @@ ALTER TABLE ONLY posts
 
 
 --
--- Name: posts_users_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
+-- Name: posts_users_nickname_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
 --
 
 ALTER TABLE ONLY posts
-    ADD CONSTRAINT posts_users_user_id_fk FOREIGN KEY (author_id) REFERENCES users(user_id);
+    ADD CONSTRAINT posts_users_nickname_fk FOREIGN KEY (author) REFERENCES users(nickname) ON UPDATE CASCADE;
 
 
 --
