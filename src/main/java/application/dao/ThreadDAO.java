@@ -46,8 +46,7 @@ public class ThreadDAO {
 	private void updateVotes(ThreadModel threadModel) {
 
 		threadModel.setVotes(jdbcTemplate.queryForObject(
-				"SELECT SUM(voice) FROM threads " +
-						"NATURAL JOIN votes WHERE thread_id=?",
+				"SELECT SUM(voice) FROM votes WHERE thread_id=?",
 				Integer.class, threadModel.getThreadId()
 		));
 	}
@@ -130,15 +129,16 @@ public class ThreadDAO {
 	}
 
 	public ThreadModel voteForThread(String threadIdOrSlug, VoteModel voteModel) {
+
 		final ThreadModel threadModel = getFullThreadByIdOrSlug(threadIdOrSlug);
-		final UserModel userModel = this.userDAO.getUserByNickname(voteModel.getNickname());
+		final Integer userId = this.userDAO.getUserIdByNickname(voteModel.getNickname());
 
 		jdbcTemplate.update(
 				"INSERT INTO votes(user_id, thread_id, voice) VALUES (?,?,?) " +
 						"ON CONFLICT (user_id, thread_id) DO UPDATE SET voice=?",
-				userModel.getId(), threadModel.getThreadId(),
-				Integer.parseInt(voteModel.getVoice()),
-				Integer.parseInt(voteModel.getVoice())
+				userId, threadModel.getThreadId(),
+				voteModel.getVoice(),
+				voteModel.getVoice()
 		);
 		this.updateVotes(threadModel);
 		return threadModel;

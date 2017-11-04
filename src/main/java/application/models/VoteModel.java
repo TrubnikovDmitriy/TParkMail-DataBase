@@ -10,7 +10,7 @@ public class VoteModel {
 	private String nickname;
 
 	@JsonProperty(required = true)
-	private String voice;
+	private Integer voice;
 
 
 	public String getNickname() {
@@ -21,11 +21,11 @@ public class VoteModel {
 		this.nickname = nickname;
 	}
 
-	public String getVoice() {
+	public Integer getVoice() {
 		return voice;
 	}
 
-	public void setVoice(String voice) {
+	public void setVoice(Integer voice) {
 		this.voice = voice;
 	}
 }

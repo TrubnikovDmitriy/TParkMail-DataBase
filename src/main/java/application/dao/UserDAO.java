@@ -27,6 +27,14 @@ public class UserDAO {
 		);
 	}
 
+	public Integer getUserIdByNickname(String nickname) {
+		return jdbcTemplate.queryForObject(
+				"SELECT user_id FROM users WHERE LOWER(nickname)=LOWER(?)",
+				Integer.class,
+				nickname
+		);
+	}
+
 	public UserModel getUserByEmail(String email) {
 		return jdbcTemplate.queryForObject(
 				"SELECT * FROM users " +
