@@ -38,16 +38,18 @@ public class ForumDAO {
 	}
 
 	@Transactional
-	public ThreadModel createNewThread(String forumSlug, ThreadModel threadModel) {
+	public ThreadModel createNewThread(String forumSlug, final ThreadModel threadModel) {
 
-		threadModel.setForumId(jdbcTemplate.queryForObject(
-				"SELECT forum_id FROM forums WHERE LOWER(slug)=LOWER(?)",
-				Long.class, forumSlug
-		));
-		threadModel.setForumSlug(jdbcTemplate.queryForObject(
-				"SELECT slug FROM forums WHERE forum_id=?",
-				String.class, threadModel.getForumId()
-		));
+		jdbcTemplate.queryForObject(
+				"SELECT forum_id, slug FROM " +
+						"forums WHERE LOWER(slug)=LOWER(?) ",
+				new Object[] {forumSlug},
+				(rs, rowNumber) -> {
+					threadModel.setForumId(rs.getLong(1));
+					threadModel.setForumSlug(rs.getString(2));
+					return threadModel;
+				}
+		);
 
 		final Integer authorID = jdbcTemplate.queryForObject(
 				"SELECT user_id FROM users WHERE LOWER(nickname)=LOWER(?)",

@@ -185,7 +185,6 @@ public class ThreadDAO {
 				new Object[] {threadIdOrSlug, threadTempID},
 				new ThreadModel.ThreadMapper()
 		);
-
 	}
 
 	public ThreadModel getFullThreadById(Long threadId) {
