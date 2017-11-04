@@ -6,6 +6,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.Console;
 import java.sql.*;
 import java.util.Date;
 import java.util.List;
@@ -47,14 +48,14 @@ public class ThreadDAO {
 
 		threadModel.setVotes(jdbcTemplate.queryForObject(
 				"SELECT SUM(voice) FROM threads " +
-					"NATURAL JOIN votes WHERE thread_id=?",
+						"NATURAL JOIN votes WHERE thread_id=?",
 				Integer.class, threadModel.getThreadId()
 		));
 	}
 
 	public ThreadDAO(JdbcTemplate jdbcTempl, UserDAO userDAO) {
-			this.jdbcTemplate = jdbcTempl;
-			this.userDAO = userDAO;
+		this.jdbcTemplate = jdbcTempl;
+		this.userDAO = userDAO;
 	}
 
 	@Transactional
@@ -110,8 +111,8 @@ public class ThreadDAO {
 		);
 
 		jdbcTemplate.batchUpdate(
-			"INSERT INTO posts_extra(post_id, created, message) " +
-					"VALUES (?, ?, ?)",
+				"INSERT INTO posts_extra(post_id, created, message) " +
+						"VALUES (?, ?, ?)",
 				new BatchPreparedStatementSetter() {
 					@Override
 					public void setValues(PreparedStatement ps, int rowNumber)
@@ -132,14 +133,13 @@ public class ThreadDAO {
 		return posts;
 	}
 
-	@Transactional
 	public ThreadModel voteForThread(String threadIdOrSlug, VoteModel voteModel) {
 		final ThreadModel threadModel = getFullThreadByIdOrSlug(threadIdOrSlug);
 		final UserModel userModel = this.userDAO.getUserByNickname(voteModel.getNickname());
 
 		jdbcTemplate.update(
 				"INSERT INTO votes(user_id, thread_id, voice) VALUES (?,?,?) " +
-					"ON CONFLICT (user_id, thread_id) DO UPDATE SET voice=?",
+						"ON CONFLICT (user_id, thread_id) DO UPDATE SET voice=?",
 				userModel.getId(), threadModel.getThreadId(),
 				Integer.parseInt(voteModel.getVoice()),
 				Integer.parseInt(voteModel.getVoice())
@@ -151,7 +151,7 @@ public class ThreadDAO {
 	public ThreadModel getThreadBySlug(String threadSlug) {
 		return jdbcTemplate.queryForObject(
 				"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
-				"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
+						"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
 						"SUM(v.voice) AS votes " +
 						"FROM threads th JOIN forums f " +
 						"ON f.forum_id=th.forum_id " +
@@ -219,9 +219,10 @@ public class ThreadDAO {
 			threadTempID = -1L;
 		}
 		final List<Long> parentsID = jdbcTemplate.query(
-				"SELECT post_id FROM posts " +
-					"NATURAL JOIN threads NATURAL JOIN threads_extra " +
-					"WHERE thread_id=? OR LOWER(slug)=LOWER(?::citext)",
+				"SELECT post_id " +
+						"FROM posts p JOIN threads_extra th " +
+						"ON p.thread_id = th.thread_id " +
+						"WHERE th.thread_id=? OR LOWER(th.slug)=LOWER(?::citext)",
 				new Object[] {threadTempID, threadIdOrSlug},
 				(resultSet, i) -> resultSet.getLong("post_id")
 		);
@@ -230,6 +231,7 @@ public class ThreadDAO {
 				continue;
 			}
 			if (!parentsID.contains(post.getParentId())) {
+				System.out.println(post.getParentId());
 				return false;
 			}
 		}
@@ -237,7 +239,7 @@ public class ThreadDAO {
 	}
 
 	public List<PostModel> getPosts(String threadIdOrSlug, Integer limit,
-	                                String sort, Boolean desc, Long since) {
+									String sort, Boolean desc, Long since) {
 
 		final ThreadModel threadModel = this.getThreadByIdOrSlug(threadIdOrSlug);
 		final StringBuilder query;
@@ -277,7 +279,7 @@ public class ThreadDAO {
 					);
 				}
 			case "tree":
-			query = new StringBuilder(
+				query = new StringBuilder(
 						"SELECT nickname AS author, created, slug AS forum, post_id AS id, path," +
 								"isedited, message, parent_id AS parent, th.thread_id AS thread " +
 								"FROM posts p NATURAL JOIN posts_extra px " +
@@ -329,11 +331,11 @@ public class ThreadDAO {
 					} else {
 						query.append("ORDER BY path ASC LIMIT ?) AS root_posts ON path && root_path ORDER BY path ASC");
 					}
-						return jdbcTemplate.query(
-								query.toString(),
-								new Object[]{threadModel.getThreadId(), limit},
-								new PostModel.PostMapper()
-						);
+					return jdbcTemplate.query(
+							query.toString(),
+							new Object[]{threadModel.getThreadId(), limit},
+							new PostModel.PostMapper()
+					);
 				} else {
 					if (desc) {
 						query = new StringBuilder(
@@ -388,7 +390,7 @@ public class ThreadDAO {
 	}
 
 	public ThreadModel updateThread(String threadIdOrSlug,
-	                                ThreadUpdateModel threadUpdate) {
+									ThreadUpdateModel threadUpdate) {
 
 		final ThreadModel threadModel = getFullThreadByIdOrSlug(threadIdOrSlug);
 		if (threadUpdate.getMessage() != null && threadUpdate.getTitle() != null) {
