@@ -36,7 +36,6 @@ public class PostModel {
 	private String thread;
 	private String path;
 
-
 	public String getAuthor() {
 		return author;
 	}

@@ -6,6 +6,7 @@ import application.models.ThreadModel;
 import application.models.ThreadUpdateModel;
 import application.models.VoteModel;
 import application.views.ErrorView;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,13 +43,12 @@ public class ThreadController{
 					HttpStatus.CREATED
 			);
 		}
-		catch (EmptyResultDataAccessException e) {
+		catch (DataIntegrityViolationException | EmptyResultDataAccessException e) {
 			return new ResponseEntity<ErrorView>(
 					new ErrorView(e.getMessage()),
 					HttpStatus.NOT_FOUND
 			);
 		}
-
 	}
 
 	@PostMapping(path = "/vote")

@@ -18,12 +18,11 @@ public class PostDAO {
 	public PostModel getPostById(Long postId) {
 
 		return jdbcTemplate.queryForObject(
-				"SELECT nickname AS author, created, slug AS forum, post_id AS id, path," +
+				"SELECT author, created, slug AS forum, post_id AS id, path," +
 						"isedited, message, parent_id AS parent, th.thread_id AS thread " +
 						"FROM posts p NATURAL JOIN posts_extra px " +
 						"JOIN threads th ON p.post_id=? AND p.thread_id=th.thread_id " +
-						"NATURAL JOIN forums f " +
-						"JOIN users u ON u.user_id=p.author_id ",
+						"NATURAL JOIN forums f ",
 				new Object[] {postId},
 				new PostModel.PostMapper()
 		);

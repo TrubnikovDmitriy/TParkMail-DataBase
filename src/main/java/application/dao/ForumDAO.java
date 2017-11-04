@@ -176,7 +176,7 @@ public class ForumDAO {
 				"LEFT JOIN posts p " +
 				"ON th.thread_id=p.thread_id " +
 				"JOIN users u " +
-				"ON th.author_id=u.user_id OR p.author_id=u.user_id " +
+				"ON th.author_id=u.user_id OR p.author=u.nickname " +
 				"NATURAL JOIN users_extra ux ");
 		if (since != null) {
 			query.append(desc ?

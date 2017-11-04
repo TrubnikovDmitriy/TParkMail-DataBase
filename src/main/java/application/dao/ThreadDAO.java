@@ -6,7 +6,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.io.Console;
 import java.sql.*;
 import java.util.Date;
 import java.util.List;
@@ -71,8 +70,9 @@ public class ThreadDAO {
 
 		final Long currentTime = new Date().getTime();
 
+
 		jdbcTemplate.batchUpdate(
-				"INSERT INTO posts(post_id, thread_id, author_id, parent_id) " +
+				"INSERT INTO posts(post_id, thread_id, author, parent_id) " +
 						"VALUES (?,?,?,?)",
 				new BatchPreparedStatementSetter() {
 					@Override
@@ -84,16 +84,12 @@ public class ThreadDAO {
 						post.setPostId(postsID.get(rowNumber));
 						post.setThreadSlug(thread.getThreadSlug());
 						post.setThreadId(thread.getThreadId());
-						post.setAuthorId(jdbcTemplate.queryForObject(
-								"SELECT user_id FROM users WHERE nickname=?",
-								Long.class, post.getAuthor())
-						);
 						post.setForumSlug(thread.getForumSlug());
 						post.setCreated(new Timestamp(currentTime));
 
 						ps.setLong(1, post.getPostId());
 						ps.setLong(2, post.getThreadId());
-						ps.setLong(3, post.getAuthorId());
+						ps.setString(3, post.getAuthor());
 						if (post.getParentId() != null) {
 							ps.setLong(4, post.getParentId());
 						} else {
@@ -231,7 +227,6 @@ public class ThreadDAO {
 				continue;
 			}
 			if (!parentsID.contains(post.getParentId())) {
-				System.out.println(post.getParentId());
 				return false;
 			}
 		}
@@ -246,12 +241,11 @@ public class ThreadDAO {
 		switch (sort) {
 			case "flat":
 				query = new StringBuilder(
-						"SELECT nickname AS author, created, slug AS forum, post_id AS id, path," +
+						"SELECT author, created, slug AS forum, post_id AS id, path," +
 								"isedited, message, parent_id AS parent, th.thread_id AS thread " +
 								"FROM posts p NATURAL JOIN posts_extra px " +
 								"JOIN threads th ON th.thread_id=? AND p.thread_id=th.thread_id " +
-								"NATURAL JOIN forums f " +
-								"JOIN users u ON u.user_id=p.author_id "
+								"NATURAL JOIN forums f "
 				);
 				if (since != null) {
 					query.append("WHERE post_id ");
@@ -280,12 +274,11 @@ public class ThreadDAO {
 				}
 			case "tree":
 				query = new StringBuilder(
-						"SELECT nickname AS author, created, slug AS forum, post_id AS id, path," +
+						"SELECT author, created, slug AS forum, post_id AS id, path," +
 								"isedited, message, parent_id AS parent, th.thread_id AS thread " +
 								"FROM posts p NATURAL JOIN posts_extra px " +
 								"JOIN threads th ON th.thread_id=? AND p.thread_id=th.thread_id " +
-								"NATURAL JOIN forums f " +
-								"JOIN users u ON u.user_id = p.author_id "
+								"NATURAL JOIN forums f "
 				);
 				if (since != null) {
 					query.append("WHERE path");
@@ -315,12 +308,11 @@ public class ThreadDAO {
 			case "parent_tree":
 				if (since == null) {
 					query = new StringBuilder(
-							"SELECT nickname AS author, created, slug AS forum, post_id AS id, path, " +
+							"SELECT author, created, slug AS forum, post_id AS id, path, " +
 									"isedited, message, parent_id AS parent, th.thread_id AS thread " +
 									"FROM posts p NATURAL JOIN posts_extra px " +
 									"JOIN threads th ON p.thread_id=th.thread_id " +
 									"NATURAL JOIN forums f " +
-									"JOIN users u ON u.user_id = p.author_id " +
 									"JOIN (" +
 									"SELECT path AS root_path " +
 									"FROM posts WHERE array_length(path, 1) = 1 " +
@@ -339,12 +331,11 @@ public class ThreadDAO {
 				} else {
 					if (desc) {
 						query = new StringBuilder(
-								"SELECT nickname AS author, created, slug AS forum, post_id AS id, path, " +
+								"SELECT author, created, slug AS forum, post_id AS id, path, " +
 										"isedited, message, parent_id AS parent, th.thread_id AS thread " +
 										"FROM posts p NATURAL JOIN posts_extra px " +
 										"JOIN threads th ON p.thread_id=th.thread_id " +
 										"NATURAL JOIN forums f " +
-										"JOIN users u ON u.user_id = p.author_id " +
 										"JOIN ( " +
 										"SELECT path AS root_path FROM posts " +
 										"WHERE thread_id=? AND array_length(path, 1) = 1 " +
@@ -358,12 +349,11 @@ public class ThreadDAO {
 										") ORDER BY path DESC");
 					} else {
 						query = new StringBuilder(
-								"SELECT nickname AS author, created, slug AS forum, post_id AS id, path, " +
+								"SELECT author, created, slug AS forum, post_id AS id, path, " +
 										"isedited, message, parent_id AS parent, th.thread_id AS thread " +
 										"FROM posts p NATURAL JOIN posts_extra px " +
 										"JOIN threads th ON p.thread_id=th.thread_id " +
 										"NATURAL JOIN forums f " +
-										"JOIN users u ON u.user_id = p.author_id " +
 										"JOIN ( " +
 										"SELECT path AS root_path FROM posts " +
 										"WHERE thread_id=? AND array_length(path, 1) = 1 " +
