@@ -1,6 +1,7 @@
 package application.dao;
 
 import application.models.*;
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -18,29 +19,42 @@ public class ThreadDAO {
 	private final UserDAO userDAO;
 
 	private ThreadModel getThreadByIdOrSlug(String threadIdOrSlug) {
-		Long threadTempID;
 		try {
-			threadTempID = Long.parseLong(threadIdOrSlug);
+			final Long threadTempID = Long.parseLong(threadIdOrSlug);
+			return jdbcTemplate.queryForObject(
+					"SELECT thx.slug, thx.thread_id, f.slug " +
+							"FROM threads_extra thx " +
+							"NATURAL JOIN threads th " +
+							"JOIN forums f " +
+							"ON thx.thread_id=? " +
+							"AND f.forum_id=th.forum_id",
+					new Object[] {threadTempID},
+					(rs, rowNumber) -> {
+						final ThreadModel threadModel = new ThreadModel();
+						threadModel.setThreadSlug(rs.getString(1));
+						threadModel.setThreadId(rs.getLong(2));
+						threadModel.setForumSlug(rs.getString(3));
+						return threadModel;
+					}
+			);
 		} catch (NumberFormatException e) {
-			threadTempID = -1L;
+			return jdbcTemplate.queryForObject(
+					"SELECT thx.slug, thx.thread_id, f.slug " +
+							"FROM threads_extra thx " +
+							"NATURAL JOIN threads th " +
+							"JOIN forums f " +
+							"ON LOWER(thx.slug)=LOWER(?) " +
+							"AND f.forum_id=th.forum_id",
+					new Object[] {threadIdOrSlug},
+					(rs, rowNumber) -> {
+						final ThreadModel threadModel = new ThreadModel();
+						threadModel.setThreadSlug(rs.getString(1));
+						threadModel.setThreadId(rs.getLong(2));
+						threadModel.setForumSlug(rs.getString(3));
+						return threadModel;
+					}
+			);
 		}
-		return jdbcTemplate.queryForObject(
-				"SELECT thx.slug, thx.thread_id, f.slug " +
-						"FROM threads_extra thx " +
-						"NATURAL JOIN threads th " +
-						"JOIN forums f " +
-						"ON (LOWER(thx.slug)=LOWER(?) OR thx.thread_id=?) " +
-						"AND f.forum_id=th.forum_id",
-				new Object[] {threadIdOrSlug, threadTempID},
-				(rs, rowNumber) -> {
-					final ThreadModel threadModel = new ThreadModel();
-					threadModel.setThreadSlug(rs.getString(1));
-					threadModel.setThreadId(rs.getLong(2));
-					threadModel.setForumSlug(rs.getString(3));
-					return threadModel;
-				}
-		);
-
 	}
 
 	private void updateVotes(ThreadModel threadModel) {
@@ -166,25 +180,40 @@ public class ThreadDAO {
 		Long threadTempID;
 		try {
 			threadTempID = Long.parseLong(threadIdOrSlug);
+			return jdbcTemplate.queryForObject(
+					"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
+							"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
+							"SUM(v.voice) AS votes " +
+							"FROM threads th JOIN forums f " +
+							"ON f.forum_id=th.forum_id " +
+							"JOIN threads_extra th_x ON " +
+							"th_x.thread_id=th.thread_id AND " +
+							"th_x.thread_id=? " +
+							"JOIN users u ON th.author_id=u.user_id " +
+							"LEFT JOIN votes v ON th.thread_id=v.thread_id " +
+							"GROUP BY th.thread_id, nickname, created, f.slug, " +
+							"th_x.message, th_x.slug, th_x.title",
+					new Object[] { threadTempID },
+					new ThreadModel.ThreadMapper()
+			);
 		} catch (NumberFormatException e) {
-			threadTempID = -1L;
+			return jdbcTemplate.queryForObject(
+					"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
+							"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
+							"SUM(v.voice) AS votes " +
+							"FROM threads th JOIN forums f " +
+							"ON f.forum_id=th.forum_id " +
+							"JOIN threads_extra th_x ON " +
+							"th_x.thread_id=th.thread_id AND " +
+							"LOWER(th_x.slug)=LOWER(?) " +
+							"JOIN users u ON th.author_id=u.user_id " +
+							"LEFT JOIN votes v ON th.thread_id=v.thread_id " +
+							"GROUP BY th.thread_id, nickname, created, f.slug, " +
+							"th_x.message, th_x.slug, th_x.title",
+					new Object[] { threadIdOrSlug },
+					new ThreadModel.ThreadMapper()
+			);
 		}
-		return jdbcTemplate.queryForObject(
-				"SELECT u.nickname, th_x.created, f.slug AS f_slug, " +
-						"th.thread_id, th_x.message, th_x.slug AS th_slug, th_x.title, " +
-						"SUM(v.voice) AS votes " +
-						"FROM threads th JOIN forums f " +
-						"ON f.forum_id=th.forum_id " +
-						"JOIN threads_extra th_x ON " +
-						"th_x.thread_id=th.thread_id AND " +
-						"(LOWER(th_x.slug)=LOWER(?) OR th_x.thread_id=?) " +
-						"JOIN users u ON th.author_id=u.user_id " +
-						"LEFT JOIN votes v ON th.thread_id=v.thread_id " +
-						"GROUP BY th.thread_id, nickname, created, f.slug, " +
-						"th_x.message, th_x.slug, th_x.title",
-				new Object[] {threadIdOrSlug, threadTempID},
-				new ThreadModel.ThreadMapper()
-		);
 	}
 
 	public ThreadModel getFullThreadById(Long threadId) {
@@ -207,20 +236,26 @@ public class ThreadDAO {
 	}
 
 	public boolean checkParents(List<PostModel> posts, String threadIdOrSlug) {
-		Long threadTempID;
+		List<Long> parentsID;
+
 		try {
-			threadTempID = Long.parseLong(threadIdOrSlug);
+			final Long threadTempID = Long.parseLong(threadIdOrSlug);
+			parentsID = jdbcTemplate.query(
+					"SELECT post_id FROM posts WHERE thread_id=?",
+					new Object[] {threadTempID},
+					(resultSet, i) -> resultSet.getLong("post_id")
+			);
+
 		} catch (NumberFormatException e) {
-			threadTempID = -1L;
+			parentsID = jdbcTemplate.query(
+					"SELECT post_id " +
+							"FROM posts p JOIN threads_extra th " +
+							"ON p.thread_id = th.thread_id " +
+							"WHERE LOWER(th.slug)=LOWER(?::citext)",
+					new Object[] {threadIdOrSlug},
+					(resultSet, i) -> resultSet.getLong("post_id")
+			);
 		}
-		final List<Long> parentsID = jdbcTemplate.query(
-				"SELECT post_id " +
-						"FROM posts p JOIN threads_extra th " +
-						"ON p.thread_id = th.thread_id " +
-						"WHERE th.thread_id=? OR LOWER(th.slug)=LOWER(?::citext)",
-				new Object[] {threadTempID, threadIdOrSlug},
-				(resultSet, i) -> resultSet.getLong("post_id")
-		);
 		for (PostModel post : posts) {
 			if (post.getParentId() == null) {
 				continue;
