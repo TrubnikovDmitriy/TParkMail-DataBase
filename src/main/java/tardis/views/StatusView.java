@@ -1,4 +1,4 @@
-package application.views;
+package tardis.views;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 

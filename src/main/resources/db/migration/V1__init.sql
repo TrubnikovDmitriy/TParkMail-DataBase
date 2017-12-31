@@ -165,7 +165,7 @@ ALTER SEQUENCE threads_thread_id_seq OWNED BY threads.thread_id;
 
 CREATE TABLE users (
     user_id integer NOT NULL,
-    nickname citext NOT NULL
+    author citext NOT NULL
 );
 
 
@@ -335,7 +335,7 @@ CREATE UNIQUE INDEX users_extra_email_uindex ON users_extra USING btree (email);
 -- Name: users_nickname_uindex; Type: INDEX; Schema: public; Owner: trubnikov
 --
 
-CREATE UNIQUE INDEX users_nickname_uindex ON users USING btree (nickname);
+CREATE UNIQUE INDEX users_nickname_uindex ON users USING btree (author);
 
 
 --
@@ -382,7 +382,7 @@ ALTER TABLE ONLY posts
 --
 
 ALTER TABLE ONLY posts
-    ADD CONSTRAINT posts_users_nickname_fk FOREIGN KEY (author) REFERENCES users(nickname) ON UPDATE CASCADE;
+    ADD CONSTRAINT posts_users_nickname_fk FOREIGN KEY (author) REFERENCES users(author) ON UPDATE CASCADE;
 
 
 --
