@@ -4,8 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import tardis.dao.ForumDAO;
 import tardis.dao.ThreadDAO;
+import tardis.dao.UserDAO;
 import tardis.models.ForumModel;
 import tardis.models.ThreadModel;
+import tardis.models.UserModel;
 import tardis.views.ErrorView;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -25,11 +27,14 @@ public class ForumController {
 
 	private final ThreadDAO threadDAO;
 	private final ForumDAO forumDAO;
+	private final UserDAO userDAO;
 
 	public ForumController(ThreadDAO threadDAO,
-	                       ForumDAO forumDAO) {
+	                       ForumDAO forumDAO,
+	                       UserDAO userDAO) {
 		this.threadDAO = threadDAO;
 		this.forumDAO = forumDAO;
+		this.userDAO = userDAO;
 	}
 
 	private final Logger logger = LoggerFactory.getLogger(ForumController.class);
@@ -119,32 +124,25 @@ public class ForumController {
 			);
 		}
 	}
-//
-//	@GetMapping(path = "/{forumSlug}/users")
-//	public ResponseEntity getUsers(
-//			@PathVariable String forumSlug,
-//			@RequestParam(name = "limit", required = false, defaultValue = "100") Integer limit,
-//			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
-//			@RequestParam(name = "since", required = false) String since) {
-//
-//		try {
-//			final List<UserModel> users = forumDAO.getUsers(forumSlug, limit, since, desc);
-//			return new ResponseEntity<List<UserModel>>(
-//					users,
-//					HttpStatus.OK
-//			);
-//		}
-//		catch (EmptyResultDataAccessException e) {
-//			return new ResponseEntity<ErrorView>(
-//					new ErrorView("Forum '" + forumSlug + "' do not exists!"),
-//					HttpStatus.NOT_FOUND
-//			);
-//		}
-//		catch (RuntimeException e) {
-//			return new ResponseEntity<ErrorView>(
-//					new ErrorView(e.getMessage()),
-//					HttpStatus.BAD_REQUEST
-//			);
-//		}
-//	}
+
+	@GetMapping(path = "/{forumSlug}/users")
+	public ResponseEntity getUsers(
+			@PathVariable String forumSlug,
+			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
+			@RequestParam(name = "limit", required = false) Integer limit,
+			@RequestParam(name = "since", required = false) String since) {
+
+		try {
+			return new ResponseEntity<>(
+					userDAO.getUsers(forumSlug, limit, since, desc),
+					HttpStatus.OK
+			);
+		}
+		catch (EmptyResultDataAccessException e) {
+			return new ResponseEntity<>(
+					new ErrorView("Forum '" + forumSlug + "' do not exists!"),
+					HttpStatus.NOT_FOUND
+			);
+		}
+	}
 }

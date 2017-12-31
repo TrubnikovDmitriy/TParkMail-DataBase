@@ -1,7 +1,6 @@
 package tardis.dao;
 
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 import tardis.models.UserModel;
 
@@ -89,5 +88,50 @@ public class UserDAO {
 				"SELECT user_id FROM users WHERE nickname=?::citext",
 				Integer.class, nickname
 		);
+	}
+
+	public List<UserModel> getUsers(String forumSlug, Integer limit,
+	                                String since, Boolean desc) {
+		final Long forumID = jdbcTemplate.queryForObject(
+				"SELECT forum_id FROM forums WHERE slug=?::citext",
+				Long.class, forumSlug
+		);
+		if (since == null) {
+			return jdbcTemplate.query(
+					"SELECT nickname, fullname, email, about " +
+							"FROM threads th " +
+							"JOIN users u ON th.author_id = u.user_id " +
+							"WHERE th.forum_id=? " +
+						"UNION " +
+						"SELECT nickname, fullname, email, about " +
+							"FROM threads th " +
+							"JOIN posts p ON p.thread_id = th.thread_id " +
+							"JOIN users u ON p.author_id = u.user_id " +
+							"WHERE th.forum_id=? " +
+						"ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
+						(limit != null ? ("LIMIT " + limit) : ""),
+					new Object[]{forumID, forumID},
+					new UserModel.UserMapper()
+			);
+		} else {
+			final String queryWhere = "WHERE th.forum_id=? AND u.nickname" +
+							(desc ? "<?::citext" : ">?::citext");
+			return jdbcTemplate.query(
+					"SELECT nickname, fullname, email, about " +
+							"FROM threads th " +
+							"JOIN users u ON th.author_id = u.user_id " +
+							queryWhere +
+						" UNION " +
+						"SELECT nickname, fullname, email, about " +
+							"FROM threads th " +
+							"JOIN posts p ON p.thread_id = th.thread_id " +
+							"JOIN users u ON p.author_id = u.user_id " +
+							queryWhere +
+						" ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
+						(limit != null ? ("LIMIT " + limit) : ""),
+					new Object[]{forumID, since, forumID, since},
+					new UserModel.UserMapper()
+			);
+		}
 	}
 }
