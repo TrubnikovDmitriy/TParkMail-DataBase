@@ -144,8 +144,8 @@ public class PostDAO {
 				return flatSort(threadID, desc, limit, since);
 			case "tree":
 				return treeSort(threadID, desc, limit, since);
-//			case "parent_tree":
-//				return parentTreeSort(threadID, desc, limit, since);
+			case "parent_tree":
+				return parentTreeSort(threadID, desc, limit, since);
 			default:
 				throw new RuntimeException("Unexpected sorting");
 		}
@@ -159,13 +159,13 @@ public class PostDAO {
 				"ORDER BY p.created DESC, p.post_id DESC ");
 		return jdbcTemplate.query(
 				"SELECT u.nickname AS author, p.created AS created," +
-						" f.slug AS forum, p.post_id AS id, " +
-						"p.isedited AS isEdited, p.mess AS message, " +
-						"p.parent_id AS parent, th.thread_id AS thread " +
+							" f.slug AS forum, p.post_id AS id, " +
+							"p.isedited AS isEdited, p.mess AS message, " +
+							"p.parent_id AS parent, th.thread_id AS thread " +
 						"FROM threads th " +
-						"JOIN forums f ON th.forum_id = f.forum_id " +
-						"JOIN posts p ON th.thread_id=p.thread_id " +
-						"JOIN users u ON p.author_id = u.user_id " +
+							"JOIN forums f ON th.forum_id = f.forum_id " +
+							"JOIN posts p ON th.thread_id=p.thread_id " +
+							"JOIN users u ON p.author_id = u.user_id " +
 						"WHERE th.thread_id=? " +
 						querySince + queryOrder +
 						(limit != null ? (" LIMIT " + limit) : ""),
@@ -182,13 +182,13 @@ public class PostDAO {
 
 		return jdbcTemplate.query(
 				"SELECT u.nickname AS author, p.created AS created," +
-						" f.slug AS forum, p.post_id AS id, " +
-						"p.isedited AS isEdited, p.mess AS message, " +
-						"p.parent_id AS parent, th.thread_id AS thread " +
+							" f.slug AS forum, p.post_id AS id, " +
+							"p.isedited AS isEdited, p.mess AS message, " +
+							"p.parent_id AS parent, th.thread_id AS thread " +
 						"FROM threads th " +
-						"JOIN forums f ON th.forum_id = f.forum_id " +
-						"JOIN posts p ON th.thread_id=p.thread_id " +
-						"JOIN users u ON p.author_id = u.user_id " +
+							"JOIN forums f ON th.forum_id = f.forum_id " +
+							"JOIN posts p ON th.thread_id=p.thread_id " +
+							"JOIN users u ON p.author_id = u.user_id " +
 						"WHERE th.thread_id=? " +
 						querySince + queryOrder +
 						(limit != null ? (" LIMIT " + limit) : ""),
@@ -199,6 +199,46 @@ public class PostDAO {
 
 	private List<PostModel> parentTreeSort(Integer threadID, Boolean desc,
 	                                       Integer limit, Long since) {
-		return null;
+		final String querySince = (since == null) ? "" :
+				"AND pq.path" + (desc ? "<" : ">") + "(SELECT path FROM posts WHERE post_id=" + since + ") ";
+		final String queryOrder = "ORDER BY p.path " + (desc ? "DESC " : "");
+		final String subqueryOrder = "ORDER BY pq.path " + (desc ? "DESC " : "");
+
+		if (limit != null) {
+			return jdbcTemplate.query(
+					"SELECT u.nickname AS author, p.created AS created," +
+								" f.slug AS forum, p.post_id AS id, " +
+								"p.isedited AS isEdited, p.mess AS message, " +
+								"p.parent_id AS parent, th.thread_id AS thread " +
+							"FROM threads th " +
+								"JOIN forums f ON th.forum_id = f.forum_id " +
+								"JOIN posts p ON th.thread_id=p.thread_id " +
+								"JOIN users u ON p.author_id = u.user_id " +
+							"WHERE path[1] IN " +
+								"(SELECT pq.post_id FROM posts pq " +
+								"WHERE pq.parent_id=0 AND pq.thread_id=? " +
+								querySince + subqueryOrder +
+								" LIMIT " + limit + ") " +
+							queryOrder,
+					new Object[]{threadID},
+					new PostModel.PostMapper()
+			);
+		} else {
+			return jdbcTemplate.query(
+					"SELECT u.nickname AS author, p.created AS created," +
+								" f.slug AS forum, p.post_id AS id, " +
+								"p.isedited AS isEdited, p.mess AS message, " +
+								"p.parent_id AS parent, th.thread_id AS thread " +
+							"FROM threads th " +
+								"JOIN forums f ON th.forum_id = f.forum_id " +
+								"JOIN posts p ON th.thread_id=p.thread_id " +
+								"JOIN users u ON p.author_id = u.user_id " +
+								"JOIN posts prnt ON prnt.post_id=p.path[1] " +
+							"WHERE th.thread_id=? AND prnt.parent_id=0 " +
+							queryOrder,
+					new Object[] { threadID },
+					new PostModel.PostMapper()
+			);
+		}
 	}
 }
