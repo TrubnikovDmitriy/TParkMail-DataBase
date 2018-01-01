@@ -19,7 +19,7 @@ USER postgres
 
 RUN /etc/init.d/postgresql start &&\
     psql --command "CREATE USER trubnikov WITH SUPERUSER PASSWORD 'pass';" &&\
-    psql --command "CREATE DATABASE tech_park OWNER trubnikov ENCODING 'UTF-8' LC_COLLATE 'C.UTF-8' LC_CTYPE 'C.UTF-8' TEMPLATE template0;" &&\
+    psql --command "CREATE DATABASE db_tpark OWNER trubnikov ENCODING 'UTF-8' LC_COLLATE 'C.UTF-8' LC_CTYPE 'C.UTF-8' TEMPLATE template0;" &&\
     psql tech_park < /opt/DataBase/src/main/resources/db/migration/V1__init.sql &&\
     /etc/init.d/postgresql stop
 
