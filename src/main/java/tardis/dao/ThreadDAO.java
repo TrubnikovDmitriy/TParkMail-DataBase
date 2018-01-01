@@ -86,6 +86,27 @@ public class ThreadDAO {
 		);
 	}
 
+	public ThreadModel getThreadByIDforDetails(Integer threadID, String forumSlug) {
+		return jdbcTemplate.queryForObject(
+				"SELECT u.nickname, t.created, t.thread_id, " +
+						"t.mess, t.slug, t.title, t.votes " +
+						"FROM threads t " +
+						"JOIN users u ON t.author_id=u.user_id " +
+						"WHERE t.thread_id=?",
+				new Object[] { threadID },
+				(rs, i) -> new ThreadModel(
+						rs.getString(1),
+						rs.getTimestamp(2),
+						forumSlug,
+						rs.getInt(3),
+						rs.getString(4),
+						rs.getString(5),
+						rs.getString(6),
+						rs.getInt(7)
+				)
+		);
+	}
+
 	public Integer getThreadIdBySlug(String slug) {
 		return jdbcTemplate.queryForObject(
 				"SELECT thread_id FROM threads WHERE slug=?::citext",

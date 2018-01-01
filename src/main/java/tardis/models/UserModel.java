@@ -10,15 +10,15 @@ import java.sql.SQLException;
 @SuppressWarnings("unused")
 public class UserModel {
 
-	@JsonProperty
-	private String email;
-	@JsonProperty
-	private String fullname;
-	@JsonProperty
-	private String about;
 	@JsonIgnore
 	private Integer id;
 	private String nickname;
+	@JsonProperty
+	private String fullname;
+	@JsonProperty
+	private String email;
+	@JsonProperty
+	private String about;
 
 	public UserModel() { }
 
@@ -33,6 +33,15 @@ public class UserModel {
 		this.fullname = fullname;
 		this.about = about;
 		this.nickname = nickname;
+	}
+
+	public UserModel(Integer id, String nickname,
+	                 String fullname, String email, String about) {
+		this.id = id;
+		this.nickname = nickname;
+		this.fullname = fullname;
+		this.email = email;
+		this.about = about;
 	}
 
 	public UserModel(Integer id, String nickname) {

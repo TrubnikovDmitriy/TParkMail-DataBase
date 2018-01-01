@@ -5,6 +5,7 @@ import tardis.models.PostModel;
 //import tardis.models.PostUpdateModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+import tardis.models.PostUpdateModel;
 import tardis.models.ThreadModel;
 import tardis.models.UserModel;
 
@@ -20,12 +21,10 @@ public class PostDAO {
 
 	private final JdbcTemplate jdbcTemplate;
 	private final ThreadDAO threadDAO;
-	private final UserDAO userDAO;
 
-	public PostDAO(JdbcTemplate jdbcTemplate, ThreadDAO threadDAO, UserDAO userDAO) {
+	public PostDAO(JdbcTemplate jdbcTemplate, ThreadDAO threadDAO) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.threadDAO = threadDAO;
-		this.userDAO = userDAO;
 	}
 
 	//	public PostModel getPostById(Long postId) {
@@ -56,6 +55,30 @@ public class PostDAO {
 //		}
 //		return postModel;
 //	}
+
+	public PostModel getPostByIDforDetails(Integer postID) {
+		return jdbcTemplate.queryForObject(
+				"SELECT p.*, u.nickname, f.slug, f.forum_id FROM posts p " +
+						"JOIN users u ON p.author_id=u.user_id " +
+						"JOIN threads th ON th.thread_id=p.thread_id " +
+						"JOIN forums f ON f.forum_id=th.forum_id " +
+					"WHERE p.post_id=?",
+				new Object[] { postID },
+				(rs, rn) -> {
+					final PostModel post = new PostModel();
+					post.setPostID(rs.getInt(1));
+					post.setThreadID(rs.getInt(2));
+					post.setAuthorID(rs.getInt(3));
+					post.setParentID(rs.getInt(4));
+					post.setMessage(rs.getString(6));
+					post.setCreated(rs.getTimestamp(7));
+					post.setEdited(rs.getBoolean(8));
+					post.setAuthor(rs.getString(9));
+					post.setForumSlug(rs.getString(10));
+					return post;
+				}
+		);
+	}
 
 	public List<PostModel> createNewPosts(ThreadModel thread, List<PostModel> posts) {
 
@@ -115,6 +138,34 @@ public class PostDAO {
 		return posts;
 	}
 
+	public PostModel updatePost(Integer postID, PostUpdateModel updatePost) {
+
+		final PostModel post = jdbcTemplate.queryForObject(
+				"SELECT u.nickname AS author, p.created AS created," +
+						" f.slug AS forum, p.post_id AS id, " +
+						"p.isedited AS isEdited, p.mess AS message, " +
+						"p.parent_id AS parent, th.thread_id AS thread " +
+						"FROM threads th " +
+						"JOIN forums f ON th.forum_id = f.forum_id " +
+						"JOIN posts p ON th.thread_id=p.thread_id " +
+						"JOIN users u ON p.author_id = u.user_id " +
+						"WHERE p.post_id=? ",
+				new Object[] { postID },
+				new PostModel.PostMapper()
+		);
+		if (updatePost.getMessage() == null ||
+				updatePost.getMessage().equals(post.getMessage())) {
+			return post;
+		}
+		jdbcTemplate.update(
+				"UPDATE posts SET mess=? WHERE post_id=?",
+				updatePost.getMessage(), postID
+		);
+		post.setMessage(updatePost.getMessage());
+		post.setEdited(true);
+		return post;
+	}
+
 	public Boolean checkParents(List<PostModel> posts, Integer threadID) {
 
 		final List<Integer> postsID = jdbcTemplate.query(
@@ -136,6 +187,9 @@ public class PostDAO {
 		Integer threadID;
 		try {
 			threadID = Integer.parseInt(threadIdOrSlug);
+			jdbcTemplate.queryForObject(
+					"SELECT thread_id FROM threads WHERE thread_id=" + threadIdOrSlug,
+					Integer.class); // todo think about it
 		} catch (NumberFormatException e) {
 			threadID = threadDAO.getThreadIdBySlug(threadIdOrSlug);
 		}

@@ -65,6 +65,21 @@ public class UserDAO {
 		);
 	}
 
+
+	public UserModel getUserByID(Integer userID) {
+		return jdbcTemplate.queryForObject(
+				"SELECT * FROM users WHERE user_id=?",
+				new Object[] { userID },
+				(rs, rn) -> new UserModel(
+						rs.getInt(1),
+						rs.getString(2),
+						rs.getString(3),
+						rs.getString(4),
+						rs.getString(5)
+				)
+		);
+	}
+
 	public String getNicknameByID(Integer userID) {
 		return jdbcTemplate.queryForObject(
 				"SELECT nickname FROM users WHERE user_id=?",

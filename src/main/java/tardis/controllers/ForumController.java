@@ -7,7 +7,6 @@ import tardis.dao.ThreadDAO;
 import tardis.dao.UserDAO;
 import tardis.models.ForumModel;
 import tardis.models.ThreadModel;
-import tardis.models.UserModel;
 import tardis.views.ErrorView;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
@@ -17,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Date;
-import java.util.List;
 
 
 @RestController

@@ -1,7 +1,7 @@
 //package application.dao;
 //
 //import application.models.PostModel;
-//import application.models.PostUpdateModel;
+//import tardis.models.PostUpdateModel;
 //import org.springframework.jdbc.core.JdbcTemplate;
 //import org.springframework.stereotype.Repository;
 //

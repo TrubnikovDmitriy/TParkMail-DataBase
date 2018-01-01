@@ -1,4 +1,4 @@
-package application.models;
+package tardis.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
