@@ -158,24 +158,43 @@ public class PostDAO {
 		final String queryOrder = (!desc ? "ORDER BY p.created, p.post_id " :
 				"ORDER BY p.created DESC, p.post_id DESC ");
 		return jdbcTemplate.query(
-				"SELECT u.nickname AS author, p.created AS created, f.slug AS forum, " +
-				"p.post_id AS id, p.isedited AS isEdited, p.mess AS message, " +
-				"p.parent_id AS parent, th.thread_id AS thread " +
-				"FROM threads th " +
-				"JOIN forums f ON th.forum_id = f.forum_id " +
-				"JOIN posts p ON th.thread_id=p.thread_id " +
-				"JOIN users u ON p.author_id = u.user_id " +
-				"WHERE th.thread_id=? " +
-				querySince + queryOrder +
-				(limit != null ? ("LIMIT " + limit) : ""),
-				new Object[] {threadID},
+				"SELECT u.nickname AS author, p.created AS created," +
+						" f.slug AS forum, p.post_id AS id, " +
+						"p.isedited AS isEdited, p.mess AS message, " +
+						"p.parent_id AS parent, th.thread_id AS thread " +
+						"FROM threads th " +
+						"JOIN forums f ON th.forum_id = f.forum_id " +
+						"JOIN posts p ON th.thread_id=p.thread_id " +
+						"JOIN users u ON p.author_id = u.user_id " +
+						"WHERE th.thread_id=? " +
+						querySince + queryOrder +
+						(limit != null ? (" LIMIT " + limit) : ""),
+				new Object[] { threadID },
 				new PostModel.PostMapper()
 		);
 	}
 
 	private List<PostModel> treeSort(Integer threadID, Boolean desc,
 	                                 Integer limit, Long since) {
-		return null;
+		final String querySince = (since == null) ? "" :
+				"AND p.path" + (desc ? "<" : ">") + "(SELECT path FROM posts WHERE post_id=" + since + ") ";
+		final String queryOrder = "ORDER BY p.path " + (desc ? "DESC " : "");
+
+		return jdbcTemplate.query(
+				"SELECT u.nickname AS author, p.created AS created," +
+						" f.slug AS forum, p.post_id AS id, " +
+						"p.isedited AS isEdited, p.mess AS message, " +
+						"p.parent_id AS parent, th.thread_id AS thread " +
+						"FROM threads th " +
+						"JOIN forums f ON th.forum_id = f.forum_id " +
+						"JOIN posts p ON th.thread_id=p.thread_id " +
+						"JOIN users u ON p.author_id = u.user_id " +
+						"WHERE th.thread_id=? " +
+						querySince + queryOrder +
+						(limit != null ? (" LIMIT " + limit) : ""),
+				new Object[] { threadID },
+				new PostModel.PostMapper()
+		);
 	}
 
 	private List<PostModel> parentTreeSort(Integer threadID, Boolean desc,
