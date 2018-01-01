@@ -57,9 +57,7 @@ public class PostDAO {
 //		return postModel;
 //	}
 
-	public List<PostModel> createNewPosts(String threadIdOrSlug, List<PostModel> posts) {
-
-		final ThreadModel thread = threadDAO.getFullThreadByIdOrSlug(threadIdOrSlug);
+	public List<PostModel> createNewPosts(ThreadModel thread, List<PostModel> posts) {
 
 		final List<Integer> postsID = jdbcTemplate.query(
 				"SELECT nextval('threads_thread_id_seq') FROM generate_series(1, ?)",
@@ -117,4 +115,71 @@ public class PostDAO {
 		return posts;
 	}
 
+	public Boolean checkParents(List<PostModel> posts, Integer threadID) {
+
+		final List<Integer> postsID = jdbcTemplate.query(
+				"SELECT post_id FROM posts WHERE thread_id=?",
+				new Object[] { threadID },
+				(rs, rn) -> rs.getInt(1)
+		);
+
+		for (PostModel post : posts) {
+			if (post.getParentID() != null && !postsID.contains(post.getParentID())) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	public List<PostModel> getPosts(String threadIdOrSlug, Integer limit,
+									String sort, Boolean desc, Long since) {
+		Integer threadID;
+		try {
+			threadID = Integer.parseInt(threadIdOrSlug);
+		} catch (NumberFormatException e) {
+			threadID = threadDAO.getThreadIdBySlug(threadIdOrSlug);
+		}
+		switch (sort) {
+			case "flat":
+				return flatSort(threadID, desc, limit, since);
+			case "tree":
+				return treeSort(threadID, desc, limit, since);
+//			case "parent_tree":
+//				return parentTreeSort(threadID, desc, limit, since);
+			default:
+				throw new RuntimeException("Unexpected sorting");
+		}
+	}
+
+	private List<PostModel> flatSort(Integer threadID, Boolean desc,
+	                                 Integer limit, Long since) {
+		final String querySince = (since == null) ? "" :
+				"AND p.post_id" + (desc ? "<" : ">") + since + ' ';
+		final String queryOrder = (!desc ? "ORDER BY p.created, p.post_id " :
+				"ORDER BY p.created DESC, p.post_id DESC ");
+		return jdbcTemplate.query(
+				"SELECT u.nickname AS author, p.created AS created, f.slug AS forum, " +
+				"p.post_id AS id, p.isedited AS isEdited, p.mess AS message, " +
+				"p.parent_id AS parent, th.thread_id AS thread " +
+				"FROM threads th " +
+				"JOIN forums f ON th.forum_id = f.forum_id " +
+				"JOIN posts p ON th.thread_id=p.thread_id " +
+				"JOIN users u ON p.author_id = u.user_id " +
+				"WHERE th.thread_id=? " +
+				querySince + queryOrder +
+				(limit != null ? ("LIMIT " + limit) : ""),
+				new Object[] {threadID},
+				new PostModel.PostMapper()
+		);
+	}
+
+	private List<PostModel> treeSort(Integer threadID, Boolean desc,
+	                                 Integer limit, Long since) {
+		return null;
+	}
+
+	private List<PostModel> parentTreeSort(Integer threadID, Boolean desc,
+	                                       Integer limit, Long since) {
+		return null;
+	}
 }

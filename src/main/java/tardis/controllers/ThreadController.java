@@ -1,5 +1,6 @@
 package tardis.controllers;
 
+import org.postgresql.util.PSQLException;
 import tardis.dao.PostDAO;
 import tardis.dao.ThreadDAO;
 import tardis.models.PostModel;
@@ -35,14 +36,15 @@ public class ThreadController{
 			@RequestBody List<PostModel> posts) {
 
 		try {
-//			if (!threadDAO.checkParents(posts, threadIdOrSlug)) {
-//				return new ResponseEntity<ErrorView>(
-//						new ErrorView("Одно или несколько из родительских сообщений отстувуют"),
-//						HttpStatus.CONFLICT
-//				);
-//			}
+			final ThreadModel thread = threadDAO.getFullThreadByIdOrSlug(threadIdOrSlug);
+			if (!postDAO.checkParents(posts, thread.getThreadID())) {
+				return new ResponseEntity<>(
+						new ErrorView("Одно или несколько из родительских сообщений отстувуют"),
+						HttpStatus.CONFLICT
+				);
+			}
 			return new ResponseEntity<>(
-					postDAO.createNewPosts(threadIdOrSlug, posts),
+					postDAO.createNewPosts(thread, posts),
 					HttpStatus.CREATED
 			);
 		} catch (DataIntegrityViolationException | EmptyResultDataAccessException e) {
@@ -50,9 +52,6 @@ public class ThreadController{
 					new ErrorView(e.getMessage()),
 					HttpStatus.NOT_FOUND
 			);
-		} catch (RuntimeException e) {
-			e.printStackTrace();
-			return null;
 		}
 	}
 
@@ -65,8 +64,7 @@ public class ThreadController{
 					threadDAO.voteForThread(threadIdOrSlug, voteModel),
 					HttpStatus.OK
 			);
-		}
-		catch (EmptyResultDataAccessException e) {
+		} catch (DataIntegrityViolationException | EmptyResultDataAccessException e) {
 			return new ResponseEntity<>(
 					new ErrorView("Thread does not exist"),
 					HttpStatus.NOT_FOUND
@@ -107,26 +105,25 @@ public class ThreadController{
 			);
 		}
 	}
-//
-//	@GetMapping(path = "/posts")
-//	public ResponseEntity getPosts(
-//			@PathVariable String threadIdOrSlug,
-//			@RequestParam(name = "limit", required = false, defaultValue = "100") Integer limit,
-//			@RequestParam(name = "sort", required = false, defaultValue = "flat") String sort,
-//			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
-//			@RequestParam(name = "since", required = false) Long since) {
-//		try {
-//			return new ResponseEntity<List<PostModel>>(
-//					threadDAO.getPosts(threadIdOrSlug, limit, sort, desc, since),
-//					HttpStatus.OK
-//			);
-//		}
-//		catch (EmptyResultDataAccessException e) {
-//			return new ResponseEntity<ErrorView>(
-//					new ErrorView(e.getMessage()),
-//					HttpStatus.NOT_FOUND
-//			);
-//		}
-//	}
+
+	@GetMapping(path = "/posts")
+	public ResponseEntity getPosts(
+			@PathVariable String threadIdOrSlug,
+			@RequestParam(name = "sort", required = false, defaultValue = "flat") String sort,
+			@RequestParam(name = "desc", required = false, defaultValue = "false") Boolean desc,
+			@RequestParam(name = "limit", required = false) Integer limit,
+			@RequestParam(name = "since", required = false) Long since) {
+		try {
+			return new ResponseEntity<>(
+					postDAO.getPosts(threadIdOrSlug, limit, sort, desc, since),
+					HttpStatus.OK
+			);
+		} catch (EmptyResultDataAccessException e) {
+			return new ResponseEntity<>(
+					new ErrorView(e.getMessage()),
+					HttpStatus.NOT_FOUND
+			);
+		}
+	}
 }
 

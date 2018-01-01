@@ -106,8 +106,7 @@ public class ThreadDAO {
 		jdbcTemplate.update(
 				"INSERT INTO votes(user_id, thread_id, voice) VALUES (?,?,?) " +
 						"ON CONFLICT (user_id, thread_id) DO UPDATE SET voice=?",
-				userId, threadID,
-				voteModel.getVoice(),
+				userId, threadID, voteModel.getVoice(),
 				voteModel.getVoice()
 		);
 
@@ -135,38 +134,6 @@ public class ThreadDAO {
 		}
 	}
 
-//	public boolean checkParents(List<PostModel> posts, String threadIdOrSlug) {
-//		List<Long> parentsID;
-//
-//		try {
-//			final Long threadTempID = Long.parseLong(threadIdOrSlug);
-//			parentsID = jdbcTemplate.query(
-//					"SELECT post_id FROM posts WHERE thread_id=?",
-//					new Object[] {threadTempID},
-//					(resultSet, i) -> resultSet.getLong("post_id")
-//			);
-//
-//		} catch (NumberFormatException e) {
-//			parentsID = jdbcTemplate.query(
-//					"SELECT post_id " +
-//							"FROM posts p JOIN threads_extra th " +
-//							"ON p.thread_id = th.thread_id " +
-//							"WHERE LOWER(th.slug)=LOWER(?::citext)",
-//					new Object[] {threadIdOrSlug},
-//					(resultSet, i) -> resultSet.getLong("post_id")
-//			);
-//		}
-//		for (PostModel post : posts) {
-//			if (post.getParentID() == null) {
-//				continue;
-//			}
-//			if (!parentsID.contains(post.getParentID())) {
-//				return false;
-//			}
-//		}
-//		return true;
-//	}
-//
 //	public List<PostModel> getPosts(String threadIdOrSlug, Integer limit,
 //									String sort, Boolean desc, Long since) {
 //

@@ -3,7 +3,10 @@ package tardis.models;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.springframework.jdbc.core.RowMapper;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 
 
@@ -130,22 +133,19 @@ public class PostModel {
 		this.authorID = authorID;
 	}
 
-//	public static final class PostMapper implements RowMapper<PostModel> {
-//		@Override
-//		public PostModel mapRow(ResultSet rs, int rowNum) throws SQLException {
-//			final PostModel postModel = new PostModel();
-//			postModel.author = rs.getString("author");
-//			postModel.created = rs.getTimestamp("created");
-//			postModel.forumSlug = rs.getString("forum");
-//			postModel.postID = rs.getInteger("id");
-//			postModel.message = rs.getString("message");
-//			postModel.isEdited = rs.getBoolean("isedited");
-//			postModel.parentID = rs.getInteger("parent");
-//			postModel.threadID = rs.getInteger("thread");
-//			if (postModel.parentID == null) {
-//				postModel.parentID = 0L;
-//			}
-//			return postModel;
-//		}
-//	}
+	public static final class PostMapper implements RowMapper<PostModel> {
+		@Override
+		public PostModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+			final PostModel postModel = new PostModel();
+			postModel.author = rs.getString("author");
+			postModel.created = rs.getTimestamp("created");
+			postModel.forumSlug = rs.getString("forum");
+			postModel.postID = rs.getInt("id");
+			postModel.message = rs.getString("message");
+			postModel.isEdited = rs.getBoolean("isedited");
+			postModel.parentID = rs.getInt("parent");
+			postModel.threadID = rs.getInt("thread");
+			return postModel;
+		}
+	}
 }
