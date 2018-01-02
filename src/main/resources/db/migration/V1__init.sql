@@ -113,8 +113,8 @@ CREATE FUNCTION trigger_votes_after_insert() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN
     IF (NEW.voice)
-      THEN UPDATE threads SET votes=votes+1;
-      ELSE UPDATE threads SET votes=votes-1;
+      THEN UPDATE threads SET votes=votes+1 WHERE thread_id=NEW.thread_id;
+      ELSE UPDATE threads SET votes=votes-1 WHERE thread_id=NEW.thread_id;
     END IF;
   RETURN NEW;
   END$$;
@@ -131,8 +131,8 @@ CREATE FUNCTION trigger_votes_after_update() RETURNS trigger
     AS $$BEGIN
     IF (NEW.voice!=OLD.voice)
       THEN IF (NEW.voice)
-        THEN UPDATE threads SET votes=votes+2;
-        ELSE UPDATE threads SET votes=votes-2;
+        THEN UPDATE threads SET votes=votes+2 WHERE thread_id=NEW.thread_id;
+        ELSE UPDATE threads SET votes=votes-2 WHERE thread_id=NEW.thread_id;
       END IF;
     END IF;
   RETURN NEW;
@@ -382,6 +382,34 @@ ALTER TABLE ONLY votes
 --
 
 CREATE UNIQUE INDEX forums_slug_uindex ON forums USING btree (slug);
+
+
+--
+-- Name: posts_author_id_index; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE INDEX posts_author_id_index ON posts USING btree (author_id);
+
+
+--
+-- Name: posts_thread_id_index; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE INDEX posts_thread_id_index ON posts USING btree (thread_id);
+
+
+--
+-- Name: threads_author_id_index; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE INDEX threads_author_id_index ON threads USING btree (author_id);
+
+
+--
+-- Name: threads_forum_id_index; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE INDEX threads_forum_id_index ON threads USING btree (forum_id);
 
 
 --

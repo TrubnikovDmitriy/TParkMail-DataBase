@@ -2,6 +2,7 @@ package tardis.models;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+
 @SuppressWarnings("unused")
 public class VoteModel {
 

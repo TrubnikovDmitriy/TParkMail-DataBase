@@ -5,7 +5,6 @@ import org.slf4j.LoggerFactory;
 import tardis.dao.UserDAO;
 import tardis.models.UserModel;
 import tardis.views.ErrorView;
-import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.http.HttpStatus;

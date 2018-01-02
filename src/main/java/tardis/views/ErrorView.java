@@ -8,6 +8,10 @@ public class ErrorView {
 	@JsonProperty("message")
 	private String message;
 
+	public ErrorView() {
+		this.message = "";
+	}
+
 	public ErrorView(String message) {
 		this.message = message;
 	}

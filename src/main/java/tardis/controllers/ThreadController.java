@@ -1,6 +1,5 @@
 package tardis.controllers;
 
-import org.postgresql.util.PSQLException;
 import tardis.dao.PostDAO;
 import tardis.dao.ThreadDAO;
 import tardis.models.PostModel;
