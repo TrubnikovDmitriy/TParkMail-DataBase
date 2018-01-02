@@ -122,7 +122,7 @@ public class UserDAO {
 						"SELECT nickname, fullname, email, about " +
 							"FROM threads th " +
 							"JOIN posts p ON p.thread_id = th.thread_id " +
-							"JOIN users u ON p.author_id = u.user_id " +
+							"JOIN users u ON p.author_nickname = u.nickname " +
 							"WHERE th.forum_id=? " +
 						"ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
 						(limit != null ? ("LIMIT " + limit) : ""),
@@ -141,7 +141,7 @@ public class UserDAO {
 						"SELECT nickname, fullname, email, about " +
 							"FROM threads th " +
 							"JOIN posts p ON p.thread_id = th.thread_id " +
-							"JOIN users u ON p.author_id = u.user_id " +
+							"JOIN users u ON p.author_nickname = u.nickname " +
 							queryWhere +
 						" ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
 						(limit != null ? ("LIMIT " + limit) : ""),

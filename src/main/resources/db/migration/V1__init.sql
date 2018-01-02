@@ -51,30 +51,14 @@ CREATE FUNCTION trigger_post_create_path() RETURNS trigger
     LANGUAGE plpgsql
     AS $$BEGIN
     IF (NEW.parent_id!=0)
-      THEN NEW.path=(SELECT path FROM posts WHERE post_id=NEW.parent_id) || ARRAY[NEW.post_id];
+      THEN NEW.path=array_append((SELECT path FROM posts WHERE post_id=NEW.parent_id), NEW.post_id);
       ELSE NEW.path=ARRAY[NEW.post_id];
     END IF;
     RETURN NEW;
-  RETURN NEW;
   END$$;
 
 
 ALTER FUNCTION public.trigger_post_create_path() OWNER TO trubnikov;
-
---
--- Name: trigger_post_increment(); Type: FUNCTION; Schema: public; Owner: trubnikov
---
-
-CREATE FUNCTION trigger_post_increment() RETURNS trigger
-    LANGUAGE plpgsql
-    AS $$BEGIN
-    UPDATE forums SET post_count=post_count+1
-    WHERE forum_id=(SELECT forum_id FROM threads WHERE thread_id=NEW.thread_id);
-    RETURN NEW;
-  END$$;
-
-
-ALTER FUNCTION public.trigger_post_increment() OWNER TO trubnikov;
 
 --
 -- Name: trigger_post_isedited(); Type: FUNCTION; Schema: public; Owner: trubnikov
@@ -189,7 +173,7 @@ ALTER SEQUENCE forums_forum_id_seq OWNED BY forums.forum_id;
 CREATE TABLE posts (
     post_id integer NOT NULL,
     thread_id integer,
-    author_id integer,
+    author_nickname citext,
     parent_id integer,
     path integer[],
     mess text,
@@ -302,7 +286,7 @@ ALTER SEQUENCE users_user_id_seq OWNED BY users.user_id;
 
 CREATE TABLE votes (
     thread_id integer NOT NULL,
-    user_id integer NOT NULL,
+    user_nickname citext NOT NULL,
     voice boolean NOT NULL
 );
 
@@ -374,7 +358,7 @@ ALTER TABLE ONLY users
 --
 
 ALTER TABLE ONLY votes
-    ADD CONSTRAINT votes_user_id_thread_id_pk PRIMARY KEY (user_id, thread_id);
+    ADD CONSTRAINT votes_user_id_thread_id_pk PRIMARY KEY (user_nickname, thread_id);
 
 
 --
@@ -388,7 +372,14 @@ CREATE UNIQUE INDEX forums_slug_uindex ON forums USING btree (slug);
 -- Name: posts_author_id_index; Type: INDEX; Schema: public; Owner: trubnikov
 --
 
-CREATE INDEX posts_author_id_index ON posts USING btree (author_id);
+CREATE INDEX posts_author_id_index ON posts USING btree (author_nickname);
+
+
+--
+-- Name: posts_post_id_thread_id_uindex; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE UNIQUE INDEX posts_post_id_thread_id_uindex ON posts USING btree (post_id, thread_id);
 
 
 --
@@ -455,13 +446,6 @@ CREATE TRIGGER post_create_path_before_insert BEFORE INSERT ON posts FOR EACH RO
 
 
 --
--- Name: post_increment_after_insert; Type: TRIGGER; Schema: public; Owner: trubnikov
---
-
-CREATE TRIGGER post_increment_after_insert AFTER INSERT ON posts FOR EACH ROW EXECUTE PROCEDURE trigger_post_increment();
-
-
---
 -- Name: post_isedited_before_update; Type: TRIGGER; Schema: public; Owner: trubnikov
 --
 
@@ -492,11 +476,11 @@ ALTER TABLE ONLY posts
 
 
 --
--- Name: posts_users_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
+-- Name: posts_users_nickname_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
 --
 
 ALTER TABLE ONLY posts
-    ADD CONSTRAINT posts_users_user_id_fk FOREIGN KEY (author_id) REFERENCES users(user_id);
+    ADD CONSTRAINT posts_users_nickname_fk FOREIGN KEY (author_nickname) REFERENCES users(nickname);
 
 
 --
@@ -524,11 +508,11 @@ ALTER TABLE ONLY votes
 
 
 --
--- Name: votes_users_user_id_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
+-- Name: votes_users_nickname_fk; Type: FK CONSTRAINT; Schema: public; Owner: trubnikov
 --
 
 ALTER TABLE ONLY votes
-    ADD CONSTRAINT votes_users_user_id_fk FOREIGN KEY (user_id) REFERENCES users(user_id);
+    ADD CONSTRAINT votes_users_nickname_fk FOREIGN KEY (user_nickname) REFERENCES users(nickname);
 
 
 --

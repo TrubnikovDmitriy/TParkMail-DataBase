@@ -32,7 +32,6 @@ public class PostModel {
 	private Integer postID;
 	@JsonProperty(value = "thread")
 	private Integer threadID;
-	private Integer authorID;
 	@JsonIgnore
 	private String thread;
 	private String path;
@@ -123,14 +122,6 @@ public class PostModel {
 
 	public void setPath(String path) {
 		this.path = path;
-	}
-
-	public Integer getAuthorID() {
-		return authorID;
-	}
-
-	public void setAuthorID(Integer authorID) {
-		this.authorID = authorID;
 	}
 
 	public static final class PostMapper implements RowMapper<PostModel> {

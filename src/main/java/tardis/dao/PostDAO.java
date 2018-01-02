@@ -7,7 +7,6 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import tardis.models.PostUpdateModel;
 import tardis.models.ThreadModel;
-import tardis.models.UserModel;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -29,8 +28,8 @@ public class PostDAO {
 
 	public PostModel getPostByIDforDetails(Integer postID) {
 		return jdbcTemplate.queryForObject(
-				"SELECT p.*, u.nickname, f.slug, f.forum_id FROM posts p " +
-						"JOIN users u ON p.author_id=u.user_id " +
+				"SELECT p.post_id, p.thread_id, p.author_nickname, p.parent_id, " +
+						"p.mess, p.created, p.isedited, f.slug FROM posts p " +
 						"JOIN threads th ON th.thread_id=p.thread_id " +
 						"JOIN forums f ON f.forum_id=th.forum_id " +
 					"WHERE p.post_id=?",
@@ -39,13 +38,12 @@ public class PostDAO {
 					final PostModel post = new PostModel();
 					post.setPostID(rs.getInt(1));
 					post.setThreadID(rs.getInt(2));
-					post.setAuthorID(rs.getInt(3));
+					post.setAuthor(rs.getString(3));
 					post.setParentID(rs.getInt(4));
-					post.setMessage(rs.getString(6));
-					post.setCreated(rs.getTimestamp(7));
-					post.setEdited(rs.getBoolean(8));
-					post.setAuthor(rs.getString(9));
-					post.setForumSlug(rs.getString(10));
+					post.setMessage(rs.getString(5));
+					post.setCreated(rs.getTimestamp(6));
+					post.setEdited(rs.getBoolean(7));
+					post.setForumSlug(rs.getString(8));
 					return post;
 				}
 		);
@@ -61,7 +59,7 @@ public class PostDAO {
 		final Long currentTime = new Date().getTime();
 
 		jdbcTemplate.batchUpdate(
-				"INSERT INTO posts(post_id, thread_id, author_id, parent_id, created, mess) " +
+				"INSERT INTO posts(post_id, thread_id, author_nickname, parent_id, created, mess) " +
 						"VALUES (?, ?, ?, ?, ?, ?)",
 				new BatchPreparedStatementSetter() {
 					@Override
@@ -69,17 +67,9 @@ public class PostDAO {
 							throws SQLException {
 
 						final PostModel post  = posts.get(rowNumber);
-						final UserModel user = jdbcTemplate.queryForObject(
-								"SELECT user_id, nickname FROM users WHERE nickname=?::citext",
-								new Object[]{ posts.get(rowNumber).getAuthor() },
-								(rs, rn)-> new UserModel(
-										rs.getInt("user_id"),
-										rs.getString("nickname")
-								)
-						);
 
 						// Для возвращаемого значения
-						post.setAuthor(user.getNickname());
+						post.setAuthor(posts.get(rowNumber).getAuthor());
 						post.setCreated(new Timestamp(currentTime));
 						post.setForumSlug(thread.getForumSlug());
 						post.setEdited(false);
@@ -93,7 +83,7 @@ public class PostDAO {
 						// Для вставляемой строки в БД
 						ps.setInt(1, post.getPostID());
 						ps.setInt(2, post.getThreadID());
-						ps.setInt(3, user.getID());
+						ps.setString(3, post.getAuthor());
 						ps.setLong(4, post.getParentID());
 						ps.setTimestamp(5, post.getCreated());
 						ps.setString(6, post.getMessage());
@@ -106,20 +96,25 @@ public class PostDAO {
 					}
 				}
 		);
+
+		jdbcTemplate.update(
+				"UPDATE forums SET post_count=post_count+? WHERE slug=?::citext",
+				posts.size(), thread.getForumSlug()
+		);
+
 		return posts;
 	}
 
 	public PostModel updatePost(Integer postID, PostUpdateModel updatePost) {
 
 		final PostModel post = jdbcTemplate.queryForObject(
-				"SELECT u.nickname AS author, p.created AS created," +
+				"SELECT p.author_nickname AS author, p.created AS created," +
 						" f.slug AS forum, p.post_id AS id, " +
 						"p.isedited AS isEdited, p.mess AS message, " +
 						"p.parent_id AS parent, th.thread_id AS thread " +
 						"FROM threads th " +
 						"JOIN forums f ON th.forum_id = f.forum_id " +
 						"JOIN posts p ON th.thread_id=p.thread_id " +
-						"JOIN users u ON p.author_id = u.user_id " +
 						"WHERE p.post_id=? ",
 				new Object[] { postID },
 				new PostModel.PostMapper()
@@ -184,14 +179,13 @@ public class PostDAO {
 		final String queryOrder = (!desc ? "ORDER BY p.created, p.post_id " :
 				"ORDER BY p.created DESC, p.post_id DESC ");
 		return jdbcTemplate.query(
-				"SELECT u.nickname AS author, p.created AS created," +
+				"SELECT p.author_nickname AS author, p.created AS created," +
 							" f.slug AS forum, p.post_id AS id, " +
 							"p.isedited AS isEdited, p.mess AS message, " +
 							"p.parent_id AS parent, th.thread_id AS thread " +
 						"FROM threads th " +
 							"JOIN forums f ON th.forum_id = f.forum_id " +
 							"JOIN posts p ON th.thread_id=p.thread_id " +
-							"JOIN users u ON p.author_id = u.user_id " +
 						"WHERE th.thread_id=? " +
 						querySince + queryOrder +
 						(limit != null ? (" LIMIT " + limit) : ""),
@@ -207,14 +201,13 @@ public class PostDAO {
 		final String queryOrder = "ORDER BY p.path " + (desc ? "DESC " : "");
 
 		return jdbcTemplate.query(
-				"SELECT u.nickname AS author, p.created AS created," +
+				"SELECT p.author_nickname AS author, p.created AS created," +
 							" f.slug AS forum, p.post_id AS id, " +
 							"p.isedited AS isEdited, p.mess AS message, " +
 							"p.parent_id AS parent, th.thread_id AS thread " +
 						"FROM threads th " +
 							"JOIN forums f ON th.forum_id = f.forum_id " +
 							"JOIN posts p ON th.thread_id=p.thread_id " +
-							"JOIN users u ON p.author_id = u.user_id " +
 						"WHERE th.thread_id=? " +
 						querySince + queryOrder +
 						(limit != null ? (" LIMIT " + limit) : ""),
@@ -232,14 +225,13 @@ public class PostDAO {
 
 		if (limit != null) {
 			return jdbcTemplate.query(
-					"SELECT u.nickname AS author, p.created AS created," +
+					"SELECT p.author_nickname AS author, p.created AS created," +
 								" f.slug AS forum, p.post_id AS id, " +
 								"p.isedited AS isEdited, p.mess AS message, " +
 								"p.parent_id AS parent, th.thread_id AS thread " +
 							"FROM threads th " +
 								"JOIN forums f ON th.forum_id = f.forum_id " +
 								"JOIN posts p ON th.thread_id=p.thread_id " +
-								"JOIN users u ON p.author_id = u.user_id " +
 							"WHERE path[1] IN " +
 								"(SELECT pq.post_id FROM posts pq " +
 								"WHERE pq.parent_id=0 AND pq.thread_id=? " +
@@ -251,14 +243,13 @@ public class PostDAO {
 			);
 		} else {
 			return jdbcTemplate.query(
-					"SELECT u.nickname AS author, p.created AS created," +
+					"SELECT p.author_nickname AS author, p.created AS created," +
 								" f.slug AS forum, p.post_id AS id, " +
 								"p.isedited AS isEdited, p.mess AS message, " +
 								"p.parent_id AS parent, th.thread_id AS thread " +
 							"FROM threads th " +
 								"JOIN forums f ON th.forum_id = f.forum_id " +
 								"JOIN posts p ON th.thread_id=p.thread_id " +
-								"JOIN users u ON p.author_id = u.user_id " +
 								"JOIN posts prnt ON prnt.post_id=p.path[1] " +
 							"WHERE th.thread_id=? AND prnt.parent_id=0 " +
 							queryOrder,

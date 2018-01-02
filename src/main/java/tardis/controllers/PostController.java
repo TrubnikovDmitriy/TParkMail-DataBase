@@ -46,7 +46,7 @@ public class PostController {
 			final PostModel postModel = postDAO.getPostByIDforDetails(postID);
 
 			final UserModel userModel = related.contains("user") ?
-					userDAO.getUserByID(postModel.getAuthorID()) : null;
+					userDAO.getUserByNickname(postModel.getAuthor()) : null;
 
 			final ForumModel forumModel = related.contains("forum") ?
 					forumDAO.getForumBySlug(postModel.getForumSlug()) : null;
