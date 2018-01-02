@@ -1,6 +1,7 @@
 package tardis.dao;
 
-import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import tardis.models.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -11,6 +12,8 @@ public class ThreadDAO {
 
 	private final JdbcTemplate jdbcTemplate;
 	private final UserDAO userDAO;
+	private final Logger logger = LoggerFactory.getLogger(ThreadDAO.class);
+
 
 
 	public ThreadDAO(JdbcTemplate jdbcTempl, UserDAO userDAO) {
@@ -122,11 +125,10 @@ public class ThreadDAO {
 			threadID = getThreadIdBySlug(threadIdOrSlug);
 		}
 
-		final Integer userId = this.userDAO.getUserIdByNickname(voteModel.getNickname());
 		jdbcTemplate.update(
-				"INSERT INTO votes(user_id, thread_id, voice) VALUES (?,?,?) " +
-						"ON CONFLICT (user_id, thread_id) DO UPDATE SET voice=?",
-				userId, threadID, voteModel.getVoice(),
+				"INSERT INTO votes(user_nickname, thread_id, voice) VALUES (?,?,?) " +
+						"ON CONFLICT (user_nickname, thread_id) DO UPDATE SET voice=?",
+				voteModel.getNickname(), threadID, voteModel.getVoice(),
 				voteModel.getVoice()
 		);
 
@@ -178,8 +180,9 @@ public class ThreadDAO {
 					"WHERE t.slug=?::citext";
 	private final String queryThreadByID =
 			"SELECT u.nickname, t.created, f.slug, thread_id," +
-					" t.mess, t.slug, t.title, votes FROM threads t " +
-					"JOIN forums f ON t.forum_id=f.forum_id " +
-					"JOIN users u ON t.author_id=u.user_id " +
+					" t.mess, t.slug, t.title, votes " +
+					"FROM threads t " +
+						"JOIN forums f ON t.forum_id=f.forum_id " +
+						"JOIN users u ON t.author_id=u.user_id " +
 					"WHERE t.thread_id=?";
 }

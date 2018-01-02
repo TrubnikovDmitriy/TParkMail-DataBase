@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @CrossOrigin(origins = "*")
 @RequestMapping(path = "/api/thread/{threadIdOrSlug}")
-public class ThreadController{
+public class ThreadController {
 
 	private final ThreadDAO threadDAO;
 	private final PostDAO postDAO;
@@ -33,7 +33,6 @@ public class ThreadController{
 	public ResponseEntity createPosts(
 			@PathVariable String threadIdOrSlug,
 			@RequestBody List<PostModel> posts) {
-
 		try {
 			final ThreadModel thread = threadDAO.getFullThreadByIdOrSlug(threadIdOrSlug);
 			if (!postDAO.checkParents(posts, thread.getThreadID())) {
@@ -92,13 +91,13 @@ public class ThreadController{
 			@PathVariable  String threadIdOrSlug,
 			@RequestBody ThreadUpdateModel threadUpdate) {
 		try {
-			return new ResponseEntity<ThreadModel>(
+			return new ResponseEntity<>(
 					threadDAO.updateThread(threadIdOrSlug, threadUpdate),
 					HttpStatus.OK
 			);
 		}
 		catch (EmptyResultDataAccessException e) {
-			return new ResponseEntity<ErrorView>(
+			return new ResponseEntity<>(
 					new ErrorView(e.getMessage()),
 					HttpStatus.NOT_FOUND
 			);

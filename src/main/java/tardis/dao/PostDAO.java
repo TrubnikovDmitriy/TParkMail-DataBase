@@ -1,7 +1,7 @@
 package tardis.dao;
 
+import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
-import org.springframework.transaction.annotation.Transactional;
 import tardis.models.PostModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
@@ -139,16 +139,17 @@ public class PostDAO {
 
 	public Boolean checkParents(List<PostModel> posts, Integer threadID) {
 
-		final List<Integer> postsID = jdbcTemplate.query(
-				"SELECT post_id FROM posts WHERE thread_id=?",
-				new Object[] { threadID },
-				(rs, rn) -> rs.getInt(1)
-		);
-
-		for (PostModel post : posts) {
-			if (post.getParentID() != null && !postsID.contains(post.getParentID())) {
-				return false;
+		try {
+			for (PostModel post : posts) {
+				if (post.getParentID() == null) continue;
+				jdbcTemplate.queryForObject(
+						"SELECT post_id FROM posts WHERE thread_id=? AND post_id=?",
+						new Object[] { threadID, post.getParentID() },
+						(rs, rn) -> rs.getInt(1)
+				);
 			}
+		} catch (EmptyResultDataAccessException e) {
+			return false;
 		}
 		return true;
 	}
