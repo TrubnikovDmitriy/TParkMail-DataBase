@@ -2,23 +2,25 @@ package tardis.dao;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.jdbc.core.RowMapper;
 import tardis.models.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 
 @Repository
 public class ThreadDAO {
 
 	private final JdbcTemplate jdbcTemplate;
-	private final UserDAO userDAO;
 	private final Logger logger = LoggerFactory.getLogger(ThreadDAO.class);
 
 
 
-	public ThreadDAO(JdbcTemplate jdbcTempl, UserDAO userDAO) {
+	public ThreadDAO(JdbcTemplate jdbcTempl) {
 		this.jdbcTemplate = jdbcTempl;
-		this.userDAO = userDAO;
 	}
 
 
@@ -44,35 +46,43 @@ public class ThreadDAO {
 
 		if (th.getCreated() != null) {
 			th.setThreadID(jdbcTemplate.queryForObject(
-					"INSERT INTO threads(forum_id, author_id, title, mess, slug, created) " +
-							"VALUES(?, ?, ?, ?, ?, ?) RETURNING thread_id",
+					"INSERT INTO threads(forum_id, author_id, title," +
+							" mess, slug, created, author_nickname) " +
+							"VALUES(?, ?, ?, ?, ?, ?, ?) RETURNING thread_id",
 					new Object[]{
 							th.getForumID(), th.getAuthorID(), th.getTitle(),
-							th.getMessage(), th.getThreadSlug(), th.getCreated()
+							th.getMessage(), th.getThreadSlug(), th.getCreated(),
+							th.getAuthor()
 					},
 					Integer.class
 			));
 		} else {
 			th.setThreadID(jdbcTemplate.queryForObject(
-					"INSERT INTO threads(forum_id, author_id, title, mess, slug) " +
-							"VALUES(?, ?, ?, ?, ?) RETURNING thread_id",
+					"INSERT INTO threads(forum_id, author_id, title, " +
+							"mess, slug, author_nickname) " +
+							"VALUES(?, ?, ?, ?, ?, ?) RETURNING thread_id",
 					new Object[]{
 							th.getForumID(), th.getAuthorID(), th.getTitle(),
-							th.getMessage(), th.getThreadSlug()
+							th.getMessage(), th.getThreadSlug(), th.getAuthor()
 					},
 					Integer.class
 			));
 		}
+		// Добавлением создателей ветки в forum_users
+		jdbcTemplate.update(
+				"INSERT INTO forum_users(forum_id, user_id) " +
+						"VALUES (?, ?) ON CONFLICT DO NOTHING",
+				th.getForumID(), th.getAuthorID()
+		);
 		return th;
 	}
 
 	public ThreadModel getThreadBySlug(String slug) {
 		return jdbcTemplate.queryForObject(
-				"SELECT u.nickname, t.created, f.slug, " +
+				"SELECT t.author_nickname, t.created, f.slug, " +
 						"thread_id, t.mess, t.slug, t.title, t.votes " +
 						"FROM threads t " +
 						"JOIN forums f ON t.forum_id=f.forum_id " +
-						"JOIN users u ON t.author_id=u.user_id " +
 						"WHERE t.slug=?::citext",
 				new Object[] { slug },
 				(rs, i) -> new ThreadModel(
@@ -90,10 +100,9 @@ public class ThreadDAO {
 
 	public ThreadModel getThreadByIDforDetails(Integer threadID, String forumSlug) {
 		return jdbcTemplate.queryForObject(
-				"SELECT u.nickname, t.created, t.thread_id, " +
+				"SELECT t.author_nickname, t.created, t.thread_id, " +
 						"t.mess, t.slug, t.title, t.votes " +
 						"FROM threads t " +
-						"JOIN users u ON t.author_id=u.user_id " +
 						"WHERE t.thread_id=?",
 				new Object[] { threadID },
 				(rs, i) -> new ThreadModel(
@@ -139,6 +148,41 @@ public class ThreadDAO {
 		);
 	}
 
+	public ThreadModel getThreadForCreatePost(String threadIdOrSlug) {
+
+		final class ThreadMapperForPosts implements RowMapper<ThreadModel> {
+			@Override
+			public ThreadModel mapRow(ResultSet rs, int rowNum) throws SQLException {
+				final ThreadModel thread = new ThreadModel();
+				thread.setAuthor(rs.getString(1));
+				thread.setForumSlug(rs.getString(2));
+				thread.setForumID(rs.getInt(3));
+				thread.setThreadID(rs.getInt(4));
+				return thread;
+			}
+		}
+		try {
+			final Integer threadTempID = Integer.parseInt(threadIdOrSlug);
+			return jdbcTemplate.queryForObject(
+					"SELECT t.author_nickname AS nickname, f.slug, f.forum_id, thread_id " +
+							"FROM threads t " +
+								"JOIN forums f ON t.forum_id=f.forum_id " +
+							"WHERE t.thread_id=?",
+					new Object[] { threadTempID },
+					new ThreadMapperForPosts()
+			);
+		} catch (NumberFormatException e) {
+			return jdbcTemplate.queryForObject(
+					"SELECT t.author_nickname AS nickname, f.slug, f.forum_id, thread_id " +
+							"FROM threads t " +
+								"JOIN forums f ON t.forum_id=f.forum_id " +
+							"WHERE t.slug=?::citext",
+					new Object[] { threadIdOrSlug },
+					new ThreadMapperForPosts()
+			);
+		}
+	}
+
 	public ThreadModel getFullThreadByIdOrSlug(String threadIdOrSlug) {
 		try {
 			final Integer threadTempID = Integer.parseInt(threadIdOrSlug);
@@ -173,16 +217,15 @@ public class ThreadDAO {
 
 
 	private final String queryThreadBySlug =
-			"SELECT u.nickname, t.created, f.slug, thread_id," +
-					" t.mess, t.slug, t.title, votes FROM threads t " +
-					"JOIN forums f ON t.forum_id=f.forum_id " +
-					"JOIN users u ON t.author_id=u.user_id " +
-					"WHERE t.slug=?::citext";
-	private final String queryThreadByID =
-			"SELECT u.nickname, t.created, f.slug, thread_id," +
+			"SELECT t.author_nickname AS nickname, t.created, f.slug, thread_id," +
 					" t.mess, t.slug, t.title, votes " +
 					"FROM threads t " +
 						"JOIN forums f ON t.forum_id=f.forum_id " +
-						"JOIN users u ON t.author_id=u.user_id " +
+					"WHERE t.slug=?::citext";
+	private final String queryThreadByID =
+			"SELECT t.author_nickname AS nickname, t.created, f.slug, thread_id," +
+					" t.mess, t.slug, t.title, votes " +
+					"FROM threads t " +
+						"JOIN forums f ON t.forum_id=f.forum_id " +
 					"WHERE t.thread_id=?";
 }

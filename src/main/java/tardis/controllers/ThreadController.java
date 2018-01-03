@@ -34,7 +34,7 @@ public class ThreadController {
 			@PathVariable String threadIdOrSlug,
 			@RequestBody List<PostModel> posts) {
 		try {
-			final ThreadModel thread = threadDAO.getFullThreadByIdOrSlug(threadIdOrSlug);
+			final ThreadModel thread = threadDAO.getThreadForCreatePost(threadIdOrSlug);
 			if (!postDAO.checkParents(posts, thread.getThreadID())) {
 				return new ResponseEntity<>(
 						new ErrorView("Одно или несколько из родительских сообщений отстувуют"),

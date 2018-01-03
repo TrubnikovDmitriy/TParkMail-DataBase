@@ -112,40 +112,67 @@ public class UserDAO {
 				"SELECT forum_id FROM forums WHERE slug=?::citext",
 				Long.class, forumSlug
 		);
+//		if (since == null) {
+//			return jdbcTemplate.query(
+//					"SELECT nickname, fullname, email, about " +
+//							"FROM threads th " +
+//							"JOIN users u ON th.author_id = u.user_id " +
+//							"WHERE th.forum_id=? " +
+//						"UNION " +
+//						"SELECT nickname, fullname, email, about " +
+//							"FROM threads th " +
+//							"JOIN posts p ON p.thread_id = th.thread_id " +
+//							"JOIN users u ON p.author_nickname = u.nickname " +
+//							"WHERE th.forum_id=? " +
+//						"ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
+//						(limit != null ? ("LIMIT " + limit) : ""),
+//					new Object[]{forumID, forumID},
+//					new UserModel.UserMapper()
+//			);
+//		} else {
+//			final String queryWhere = "WHERE th.forum_id=? AND u.nickname" +
+//							(desc ? "<?::citext" : ">?::citext");
+//			return jdbcTemplate.query(
+//					"SELECT nickname, fullname, email, about " +
+//							"FROM threads th " +
+//							"JOIN users u ON th.author_id = u.user_id " +
+//							queryWhere +
+//						" UNION " +
+//						"SELECT nickname, fullname, email, about " +
+//							"FROM threads th " +
+//							"JOIN posts p ON p.thread_id = th.thread_id " +
+//							"JOIN users u ON p.author_nickname = u.nickname " +
+//							queryWhere +
+//						" ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
+//						(limit != null ? ("LIMIT " + limit) : ""),
+//					new Object[]{forumID, since, forumID, since},
+//					new UserModel.UserMapper()
+//			);
+//		}
+
+
 		if (since == null) {
 			return jdbcTemplate.query(
 					"SELECT nickname, fullname, email, about " +
-							"FROM threads th " +
-							"JOIN users u ON th.author_id = u.user_id " +
-							"WHERE th.forum_id=? " +
-						"UNION " +
-						"SELECT nickname, fullname, email, about " +
-							"FROM threads th " +
-							"JOIN posts p ON p.thread_id = th.thread_id " +
-							"JOIN users u ON p.author_nickname = u.nickname " +
-							"WHERE th.forum_id=? " +
-						"ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
-						(limit != null ? ("LIMIT " + limit) : ""),
-					new Object[]{forumID, forumID},
+							"FROM forum_users fu " +
+							"JOIN users u ON fu.user_id=u.user_id " +
+							"WHERE fu.forum_id=? " +
+							"ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
+							(limit != null ? ("LIMIT " + limit) : ""),
+					new Object[]{ forumID },
 					new UserModel.UserMapper()
 			);
 		} else {
-			final String queryWhere = "WHERE th.forum_id=? AND u.nickname" +
-							(desc ? "<?::citext" : ">?::citext");
+			final String queryWhere = "WHERE fu.forum_id=? AND u.nickname" +
+					(desc ? "<?::citext" : ">?::citext");
 			return jdbcTemplate.query(
 					"SELECT nickname, fullname, email, about " +
-							"FROM threads th " +
-							"JOIN users u ON th.author_id = u.user_id " +
+							"FROM forum_users fu " +
+							"JOIN users u ON fu.user_id=u.user_id " +
 							queryWhere +
-						" UNION " +
-						"SELECT nickname, fullname, email, about " +
-							"FROM threads th " +
-							"JOIN posts p ON p.thread_id = th.thread_id " +
-							"JOIN users u ON p.author_nickname = u.nickname " +
-							queryWhere +
-						" ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
-						(limit != null ? ("LIMIT " + limit) : ""),
-					new Object[]{forumID, since, forumID, since},
+							" ORDER BY nickname " + (desc ? "DESC " : "ASC ") +
+							(limit != null ? ("LIMIT " + limit) : ""),
+					new Object[]{ forumID, since },
 					new UserModel.UserMapper()
 			);
 		}

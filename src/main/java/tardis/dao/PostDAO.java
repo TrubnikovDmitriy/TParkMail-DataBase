@@ -2,17 +2,20 @@ package tardis.dao;
 
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import tardis.models.PostModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import tardis.models.PostUpdateModel;
 import tardis.models.ThreadModel;
+import tardis.models.UserModel;
 
+import java.sql.Array;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Timestamp;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 
 
 @Repository
@@ -97,11 +100,58 @@ public class PostDAO {
 				}
 		);
 
-		jdbcTemplate.update(
-				"UPDATE forums SET post_count=post_count+? WHERE slug=?::citext",
-				posts.size(), thread.getForumSlug()
-		);
 
+		if (!posts.isEmpty()) {
+
+			// Обновить счетчик постов в форуме
+			jdbcTemplate.update(
+					"UPDATE forums SET post_count=post_count+? WHERE slug=?::citext",
+					posts.size(), thread.getForumSlug()
+			);
+
+
+			// Вставить новых авторов постов в forum_users
+			final MapSqlParameterSource parameters =new MapSqlParameterSource();
+			final ArrayList<String> userNames = new ArrayList<>(posts.size());
+			for (PostModel post : posts) {
+				if (!userNames.contains(post.getAuthor())) {
+					userNames.add(post.getAuthor());
+				}
+			}
+			parameters.addValue("names", userNames);
+
+
+			final NamedParameterJdbcTemplate namedParameterJdbcTemplate =
+					new NamedParameterJdbcTemplate(jdbcTemplate);
+
+			// Получаем ID юзеров, которых еще нет в forum_users
+			final List<Integer> userID = namedParameterJdbcTemplate.query(
+					"SELECT user_id FROM users " +
+							"WHERE nickname IN (:names) AND user_id NOT IN " +
+							"(SELECT user_id FROM forum_users WHERE forum_id=" +
+							thread.getForumID() + ')',
+					parameters, (rs, rn) -> rs.getInt(1)
+			);
+
+			// Вставляем этих юзеров
+			jdbcTemplate.batchUpdate(
+					"INSERT INTO forum_users(forum_id, user_id) " +
+							"VALUES (?, ?) ON CONFLICT DO NOTHING",
+					new BatchPreparedStatementSetter() {
+						@Override
+						public void setValues(PreparedStatement ps, int rowNumber)
+								throws SQLException {
+							ps.setInt(1, thread.getForumID());
+							ps.setInt(2, userID.get(rowNumber));
+						}
+
+						@Override
+						public int getBatchSize() {
+							return userID.size();
+						}
+					}
+			);
+		}
 		return posts;
 	}
 
