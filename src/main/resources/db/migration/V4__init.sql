@@ -428,6 +428,20 @@ CREATE INDEX posts_thread_id_parent_id_path_index ON posts USING btree (thread_i
 
 
 --
+-- Name: second_indeces; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE INDEX second_indeces ON posts USING btree (thread_id, created DESC, post_id DESC);
+
+
+--
+-- Name: thread+path; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE INDEX "thread+path" ON posts USING btree (thread_id, (path[1]));
+
+
+--
 -- Name: threads_author_id_index; Type: INDEX; Schema: public; Owner: trubnikov
 --
 
