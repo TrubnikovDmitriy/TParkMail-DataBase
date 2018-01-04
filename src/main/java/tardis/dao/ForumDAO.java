@@ -1,10 +1,14 @@
 package tardis.dao;
 
+import org.springframework.jdbc.core.RowMapper;
+import org.springframework.lang.Nullable;
 import tardis.models.ForumModel;
 import tardis.models.ThreadModel;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Date;
 import java.util.List;
 
@@ -62,36 +66,50 @@ public class ForumDAO {
 	public List<ThreadModel> getThreads(String forumSlug, Integer limit,
 	                                    Date since, Boolean desc) {
 
-		forumSlug = jdbcTemplate.queryForObject(
-				"SELECT slug FROM forums WHERE slug=?::citext",
-				String.class, forumSlug
+		final ThreadModel thread = new ThreadModel();
+		jdbcTemplate.queryForObject(
+				"SELECT forum_id, slug FROM forums WHERE slug=?::citext",
+				new Object[] { forumSlug },
+				(rs, rn) -> {
+					thread.setForumID(rs.getInt(1));
+					thread.setForumSlug(rs.getString(2));
+					return thread;
+				}
 		); // Проверка, что форум вообще существует
+
+		final RowMapper<ThreadModel> mapper = (rs, rn) ->  {
+				final ThreadModel thr = new ThreadModel();
+				thr.setAuthor(rs.getString(1));
+				thr.setCreated(rs.getTimestamp(2));
+				thr.setMessage(rs.getString(3));
+				thr.setThreadSlug(rs.getString(4));
+				thr.setTitle(rs.getString(5));
+				thr.setVotes(rs.getInt(6));
+				thr.setThreadID(rs.getInt(7));
+				thr.setForumSlug(thread.getForumSlug());
+				return thr;
+		};
 
 		return (since == null) ?
 				jdbcTemplate.query(
-						"SELECT u.nickname, t.created, f.slug, " +
-								"thread_id, t.mess, t.slug, t.title, t.votes " +
-								"FROM threads t " +
-								"JOIN forums f ON t.forum_id=f.forum_id " +
-								"JOIN users u ON t.author_id=u.user_id " +
-								"WHERE f.slug=?::citext " +
+						"SELECT t.author_nickname, t.created, " +
+								"t.mess, t.slug, t.title, t.votes, t.thread_id " +
+								"FROM threads t WHERE t.forum_id=? " +
 								"ORDER BY t.created" +
 								(desc ? " DESC " : " ASC ") + "LIMIT ?;",
-						new Object[] {forumSlug, limit},
-						new ThreadModel.ThreadMapper()
+						new Object[] { thread.getForumID(), limit},
+						mapper
 				) :
 				jdbcTemplate.query(
-						"SELECT u.nickname, t.created, f.slug, " +
-								"thread_id, t.mess, t.slug, t.title, t.votes " +
+						"SELECT t.author_nickname, t.created, " +
+								"t.mess, t.slug, t.title, t.votes, t.thread_id " +
 								"FROM threads t " +
-								"JOIN forums f ON t.forum_id=f.forum_id " +
-								"JOIN users u ON t.author_id=u.user_id " +
-								"WHERE f.slug=?::citext AND " +
+								"WHERE t.forum_id=? AND " +
 								"t.created " + (desc ? "<=" : ">=") + "? " +
 								"ORDER BY t.created" +
 								(desc ? " DESC " : " ASC ") + "LIMIT ?;",
-						new Object[] {forumSlug, since, limit},
-						new ThreadModel.ThreadMapper()
+						new Object[] { thread.getForumID(), since, limit},
+						mapper
 				);
 	}
 }
