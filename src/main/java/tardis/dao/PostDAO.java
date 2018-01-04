@@ -62,8 +62,9 @@ public class PostDAO {
 		final Long currentTime = new Date().getTime();
 
 		jdbcTemplate.batchUpdate(
-				"INSERT INTO posts(post_id, thread_id, author_nickname, parent_id, created, mess) " +
-						"VALUES (?, ?, ?, ?, ?, ?)",
+				"INSERT INTO posts(post_id, thread_id, author_nickname, " +
+						"parent_id, created, mess, forum_slug) " +
+						"VALUES (?, ?, ?, ?, ?, ?, ?)",
 				new BatchPreparedStatementSetter() {
 					@Override
 					public void setValues(PreparedStatement ps, int rowNumber)
@@ -90,6 +91,7 @@ public class PostDAO {
 						ps.setLong(4, post.getParentID());
 						ps.setTimestamp(5, post.getCreated());
 						ps.setString(6, post.getMessage());
+						ps.setString(7, thread.getForumSlug());
 
 						posts.set(rowNumber, post);
 					}
@@ -229,14 +231,11 @@ public class PostDAO {
 		final String queryOrder = (!desc ? "ORDER BY p.created, p.post_id " :
 				"ORDER BY p.created DESC, p.post_id DESC ");
 		return jdbcTemplate.query(
-				"SELECT p.author_nickname AS author, p.created AS created," +
-							" f.slug AS forum, p.post_id AS id, " +
+				"SELECT p.author_nickname AS author, p.created AS created, " +
+							"p.forum_slug AS forum, p.post_id AS id, " +
 							"p.isedited AS isEdited, p.mess AS message, " +
-							"p.parent_id AS parent, th.thread_id AS thread " +
-						"FROM threads th " +
-							"JOIN forums f ON th.forum_id = f.forum_id " +
-							"JOIN posts p ON th.thread_id=p.thread_id " +
-						"WHERE th.thread_id=? " +
+							"p.parent_id AS parent, p.thread_id AS thread " +
+						"FROM posts p WHERE p.thread_id=? " +
 						querySince + queryOrder +
 						(limit != null ? (" LIMIT " + limit) : ""),
 				new Object[] { threadID },
@@ -251,14 +250,11 @@ public class PostDAO {
 		final String queryOrder = "ORDER BY p.path " + (desc ? "DESC " : "");
 
 		return jdbcTemplate.query(
-				"SELECT p.author_nickname AS author, p.created AS created," +
-							" f.slug AS forum, p.post_id AS id, " +
+				"SELECT p.author_nickname AS author, p.created AS created, " +
+							"p.forum_slug AS forum, p.post_id AS id, " +
 							"p.isedited AS isEdited, p.mess AS message, " +
-							"p.parent_id AS parent, th.thread_id AS thread " +
-						"FROM threads th " +
-							"JOIN forums f ON th.forum_id = f.forum_id " +
-							"JOIN posts p ON th.thread_id=p.thread_id " +
-						"WHERE th.thread_id=? " +
+							"p.parent_id AS parent, p.thread_id AS thread " +
+						"FROM posts p WHERE p.thread_id=? " +
 						querySince + queryOrder +
 						(limit != null ? (" LIMIT " + limit) : ""),
 				new Object[] { threadID },
@@ -275,33 +271,29 @@ public class PostDAO {
 
 		if (limit != null) {
 			return jdbcTemplate.query(
-					"SELECT p.author_nickname AS author, p.created AS created," +
-								" f.slug AS forum, p.post_id AS id, " +
+					"SELECT p.author_nickname AS author, p.created AS created, " +
+								"p.forum_slug AS forum, p.post_id AS id, " +
 								"p.isedited AS isEdited, p.mess AS message, " +
-								"p.parent_id AS parent, th.thread_id AS thread " +
-							"FROM threads th " +
-								"JOIN forums f ON th.forum_id = f.forum_id " +
-								"JOIN posts p ON th.thread_id=p.thread_id " +
-							"WHERE path[1] IN " +
+								"p.parent_id AS parent, p.thread_id AS thread " +
+							"FROM posts p " +
+							"WHERE p.thread_id=? AND path[1] IN " +
 								"(SELECT pq.post_id FROM posts pq " +
 								"WHERE pq.parent_id=0 AND pq.thread_id=? " +
 								querySince + subqueryOrder +
 								" LIMIT " + limit + ") " +
 							queryOrder,
-					new Object[]{threadID},
+					new Object[]{ threadID, threadID },
 					new PostModel.PostMapper()
 			);
 		} else {
 			return jdbcTemplate.query(
-					"SELECT p.author_nickname AS author, p.created AS created," +
-								" f.slug AS forum, p.post_id AS id, " +
+					"SELECT p.author_nickname AS author, p.created AS created, " +
+								"p.forum_slug AS forum, p.post_id AS id, " +
 								"p.isedited AS isEdited, p.mess AS message, " +
-								"p.parent_id AS parent, th.thread_id AS thread " +
-							"FROM threads th " +
-								"JOIN forums f ON th.forum_id = f.forum_id " +
-								"JOIN posts p ON th.thread_id=p.thread_id " +
+								"p.parent_id AS parent, p.thread_id AS thread " +
+							"FROM posts p " +
 								"JOIN posts prnt ON prnt.post_id=p.path[1] " +
-							"WHERE th.thread_id=? AND prnt.parent_id=0 " +
+							"WHERE p.thread_id=? AND prnt.parent_id=0 " +
 							queryOrder,
 					new Object[] { threadID },
 					new PostModel.PostMapper()
