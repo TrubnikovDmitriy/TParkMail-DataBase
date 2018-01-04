@@ -435,6 +435,13 @@ CREATE INDEX second_indeces ON posts USING btree (thread_id, created DESC, post_
 
 
 --
+-- Name: subquery-desc; Type: INDEX; Schema: public; Owner: trubnikov
+--
+
+CREATE INDEX "subquery-desc" ON posts USING btree (thread_id, path);
+
+
+--
 -- Name: thread+path; Type: INDEX; Schema: public; Owner: trubnikov
 --
 

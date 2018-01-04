@@ -270,17 +270,33 @@ public class PostDAO {
 		final String subqueryOrder = "ORDER BY pq.path " + (desc ? "DESC " : "");
 
 		if (limit != null) {
+//			return jdbcTemplate.query(
+//					"SELECT p.author_nickname AS author, p.created AS created, " +
+//								"p.forum_slug AS forum, p.post_id AS id, " +
+//								"p.isedited AS isEdited, p.mess AS message, " +
+//								"p.parent_id AS parent, p.thread_id AS thread " +
+//							"FROM posts p " +
+//							"WHERE p.thread_id=? AND path[1] IN " +
+//								"(SELECT pq.post_id FROM posts pq " +
+//								"WHERE pq.parent_id=0 AND pq.thread_id=? " +
+//								querySince + subqueryOrder +
+//								" LIMIT " + limit + ") " +
+//							queryOrder,
+//					new Object[]{ threadID, threadID },
+//					new PostModel.PostMapper()
+//			);
 			return jdbcTemplate.query(
 					"SELECT p.author_nickname AS author, p.created AS created, " +
 								"p.forum_slug AS forum, p.post_id AS id, " +
 								"p.isedited AS isEdited, p.mess AS message, " +
 								"p.parent_id AS parent, p.thread_id AS thread " +
-							"FROM posts p " +
-							"WHERE p.thread_id=? AND path[1] IN " +
-								"(SELECT pq.post_id FROM posts pq " +
+							"FROM posts p JOIN (" +
+								"SELECT pq.post_id FROM posts pq " +
 								"WHERE pq.parent_id=0 AND pq.thread_id=? " +
 								querySince + subqueryOrder +
-								" LIMIT " + limit + ") " +
+								" LIMIT " + limit +
+							") AS psq ON psq.post_id=p.path[1]" +
+							"WHERE p.thread_id=? " +
 							queryOrder,
 					new Object[]{ threadID, threadID },
 					new PostModel.PostMapper()
