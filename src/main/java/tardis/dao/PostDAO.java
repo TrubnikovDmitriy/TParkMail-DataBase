@@ -31,11 +31,9 @@ public class PostDAO {
 
 	public PostModel getPostByIDforDetails(Integer postID) {
 		return jdbcTemplate.queryForObject(
-				"SELECT p.post_id, p.thread_id, p.author_nickname, p.parent_id, " +
-						"p.mess, p.created, p.isedited, f.slug FROM posts p " +
-						"JOIN threads th ON th.thread_id=p.thread_id " +
-						"JOIN forums f ON f.forum_id=th.forum_id " +
-					"WHERE p.post_id=?",
+				"SELECT p.post_id, p.thread_id, p.author_nickname, " +
+						"p.parent_id, p.mess, p.created, p.isedited, p.forum_slug " +
+						"FROM posts p WHERE p.post_id=?",
 				new Object[] { postID },
 				(rs, rn) -> {
 					final PostModel post = new PostModel();
@@ -160,13 +158,11 @@ public class PostDAO {
 	public PostModel updatePost(Integer postID, PostUpdateModel updatePost) {
 
 		final PostModel post = jdbcTemplate.queryForObject(
-				"SELECT p.author_nickname AS author, p.created AS created," +
-						" f.slug AS forum, p.post_id AS id, " +
+				"SELECT p.author_nickname AS author, p.created AS created, " +
+						"p.forum_slug AS forum, p.post_id AS id, " +
 						"p.isedited AS isEdited, p.mess AS message, " +
-						"p.parent_id AS parent, th.thread_id AS thread " +
-						"FROM threads th " +
-						"JOIN forums f ON th.forum_id = f.forum_id " +
-						"JOIN posts p ON th.thread_id=p.thread_id " +
+						"p.parent_id AS parent, p.thread_id AS thread " +
+						"FROM posts p " +
 						"WHERE p.post_id=? ",
 				new Object[] { postID },
 				new PostModel.PostMapper()
@@ -270,21 +266,6 @@ public class PostDAO {
 		final String subqueryOrder = "ORDER BY pq.path " + (desc ? "DESC " : "");
 
 		if (limit != null) {
-//			return jdbcTemplate.query(
-//					"SELECT p.author_nickname AS author, p.created AS created, " +
-//								"p.forum_slug AS forum, p.post_id AS id, " +
-//								"p.isedited AS isEdited, p.mess AS message, " +
-//								"p.parent_id AS parent, p.thread_id AS thread " +
-//							"FROM posts p " +
-//							"WHERE p.thread_id=? AND path[1] IN " +
-//								"(SELECT pq.post_id FROM posts pq " +
-//								"WHERE pq.parent_id=0 AND pq.thread_id=? " +
-//								querySince + subqueryOrder +
-//								" LIMIT " + limit + ") " +
-//							queryOrder,
-//					new Object[]{ threadID, threadID },
-//					new PostModel.PostMapper()
-//			);
 			return jdbcTemplate.query(
 					"SELECT p.author_nickname AS author, p.created AS created, " +
 								"p.forum_slug AS forum, p.post_id AS id, " +
