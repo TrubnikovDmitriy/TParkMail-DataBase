@@ -43,4 +43,4 @@ EXPOSE 5000
 
 RUN mvn install
 
-CMD service postgresql start && java -Xms300M -Xmx600M -jar $WORK/target/tech-db-1.0-SNAPSHOT.jar
+CMD service postgresql start && java -Xms200M -Xmx200M -XX:+UseSerialGC -jar $WORK/target/tech-db-1.0-SNAPSHOT.jar
